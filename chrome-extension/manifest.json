@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "StudyFlow Companion",
+  "version": "0.1.0",
+  "description": "Sends the active Chrome tab metadata to the local StudyFlow desktop app.",
+  "permissions": ["tabs"],
+  "host_permissions": ["http://127.0.0.1:32145/*"],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "action": {
+    "default_title": "StudyFlow Companion"
+  }
+}

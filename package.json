@@ -1,0 +1,37 @@
+{
+  "name": "studyflow",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist-electron/electron/main.js",
+  "scripts": {
+    "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:main\" \"npm:dev:electron\"",
+    "dev:renderer": "vite",
+    "dev:main": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
+    "prepare:electron-runtime": "node scripts/write-electron-package.cjs",
+    "dev:electron": "npm run prepare:electron-runtime && wait-on tcp:5173 dist-electron/electron/main.js && electron .",
+    "build": "tsc -b && tsc -p tsconfig.electron.json && npm run prepare:electron-runtime && vite build",
+    "preview": "vite preview",
+    "start": "npm run prepare:electron-runtime && electron .",
+    "rebuild:native": "electron-rebuild -f -o better-sqlite3",
+    "dev:desktop": "npm run rebuild:native && npm run dev"
+  },
+  "dependencies": {
+    "active-win": "^8.1.1",
+    "better-sqlite3": "^11.7.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@electron/rebuild": "^4.0.3",
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.2.79",
+    "@types/react-dom": "^18.2.25",
+    "@vitejs/plugin-react": "^4.3.3",
+    "concurrently": "^9.1.2",
+    "electron": "^34.0.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10",
+    "wait-on": "^8.0.1"
+  }
+}
