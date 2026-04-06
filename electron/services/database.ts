@@ -469,6 +469,15 @@ export class StudyflowDatabase {
     return updated;
   }
 
+  deleteRule(id: string) {
+    this.db.prepare(`delete from rules where id = ?`).run(id);
+  }
+
+  deleteStudySession(id: string) {
+    this.db.prepare(`delete from study_sessions where id = ?`).run(id);
+    this.db.prepare(`delete from activity_events where id = ?`).run(id);
+  }
+
   getSettings(): TrackingConfig {
     const row = this.db
       .prepare(

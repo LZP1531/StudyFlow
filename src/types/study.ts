@@ -143,6 +143,8 @@ export interface StudyflowApi {
   listRules(): Promise<Rule[]>;
   createRule(input: RuleInput): Promise<Rule>;
   updateRule(id: string, input: Partial<RuleInput>): Promise<Rule>;
+  deleteRule(id: string): Promise<void>;
+  deleteStudySession(id: string): Promise<void>;
   getSettings(): Promise<TrackingConfig>;
   updateSettings(input: SettingsUpdate): Promise<TrackingConfig>;
   getSettingsMeta(): Promise<SettingsMeta>;

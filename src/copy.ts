@@ -136,7 +136,7 @@ export const copy: Record<Locale, Copy> = {
     themeModes: { light: "浅色", dark: "深色", system: "系统" },
     classification: {
       study: "学习",
-      distraction: "干扰",
+      distraction: "娱乐",
       neutral: "中性",
     },
     currentFocus: "当前学习",
@@ -147,7 +147,7 @@ export const copy: Record<Locale, Copy> = {
       today: { label: "今日学习时长" },
       focused: { label: "学习片段" },
       weekly: { label: "本周累计" },
-      distraction: { label: "干扰时长" },
+      distraction: { label: "娱乐时长" },
     },
     weekly: {
       eyebrow: "Weekly trend",

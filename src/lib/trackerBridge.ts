@@ -100,6 +100,25 @@ class MockTrackerBridge implements TrackerBridge {
     return updated;
   }
 
+  async deleteRule(id: string) {
+    const index = rules.findIndex((rule) => rule.id === id);
+    if (index >= 0) {
+      rules.splice(index, 1);
+    }
+  }
+
+  async deleteStudySession(id: string) {
+    const sessionIndex = sessions.findIndex((session) => session.id === id);
+    if (sessionIndex >= 0) {
+      sessions.splice(sessionIndex, 1);
+    }
+
+    const eventIndex = activityEvents.findIndex((event) => event.id === id);
+    if (eventIndex >= 0) {
+      activityEvents.splice(eventIndex, 1);
+    }
+  }
+
   async getSettings() {
     return trackingConfig;
   }

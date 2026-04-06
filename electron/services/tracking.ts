@@ -19,6 +19,7 @@ const browserNames = new Set(["Google Chrome", "chrome.exe"]);
 export async function captureActiveWindow(
   idleSeconds: number,
   browserActivity: BrowserActivityPayload | null,
+  idleThresholdMinutes: number,
 ): Promise<ActiveWindowSnapshot | null> {
   try {
     const activeWindow = await activeWin();
@@ -41,7 +42,7 @@ export async function captureActiveWindow(
       url: shouldUseBrowserActivity ? browserActivity.url : undefined,
       browserName: shouldUseBrowserActivity ? browserActivity.browser : undefined,
       pageType: shouldUseBrowserActivity ? browserActivity.pageType : undefined,
-      isIdle: idleSeconds > 240,
+      isIdle: idleSeconds >= Math.max(1, idleThresholdMinutes) * 60,
       capturedAt: new Date().toISOString(),
     };
   } catch {

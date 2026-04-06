@@ -12,6 +12,8 @@ const api: StudyflowApi = {
   createRule: (input: RuleInput) => ipcRenderer.invoke("studyflow:createRule", input),
   updateRule: (id: string, input: Partial<RuleInput>) =>
     ipcRenderer.invoke("studyflow:updateRule", id, input),
+  deleteRule: (id: string) => ipcRenderer.invoke("studyflow:deleteRule", id),
+  deleteStudySession: (id: string) => ipcRenderer.invoke("studyflow:deleteStudySession", id),
   getSettings: () => ipcRenderer.invoke("studyflow:getSettings"),
   updateSettings: (input: SettingsUpdate) => ipcRenderer.invoke("studyflow:updateSettings", input),
   getSettingsMeta: () => ipcRenderer.invoke("studyflow:getSettingsMeta"),

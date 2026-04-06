@@ -103,6 +103,8 @@ function setupIpc() {
   ipcMain.handle("studyflow:listRules", () => database.listRules());
   ipcMain.handle("studyflow:createRule", (_event, input) => database.createRule(input));
   ipcMain.handle("studyflow:updateRule", (_event, id, input) => database.updateRule(id, input));
+  ipcMain.handle("studyflow:deleteRule", (_event, id) => database.deleteRule(id));
+  ipcMain.handle("studyflow:deleteStudySession", (_event, id) => database.deleteStudySession(id));
   ipcMain.handle("studyflow:getSettings", () => database.getSettings());
   ipcMain.handle("studyflow:updateSettings", (_event, input) => {
     const updated = database.updateSettings(input);
@@ -211,7 +213,8 @@ function startTrackingLoop() {
     }
     const idleSeconds = powerMonitor.getSystemIdleTime();
     const browserActivity = extensionBridge.getLatestActivity();
-    const sample = await captureActiveWindow(idleSeconds, browserActivity);
+    const idleThresholdMinutes = database.getSettings().idleThresholdMinutes;
+    const sample = await captureActiveWindow(idleSeconds, browserActivity, idleThresholdMinutes);
     if (sample) {
       database.recordSample(sample);
     }
