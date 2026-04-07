@@ -351,6 +351,7 @@ export const rules: Rule[] = [
 export const trackingConfig: TrackingConfig = {
   themeMode: "dark",
   locale: "zh",
+  dashboardTimerStyle: "dial",
   idleThresholdMinutes: 4,
   launchOnStartup: true,
   minimizeToTray: true,

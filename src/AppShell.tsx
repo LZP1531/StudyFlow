@@ -1,5 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { copy } from "./copy";
+import { useRef } from "react";
 import type { Copy, Locale, ThemeMode, ViewKey } from "./copy";
 import { trackerBridge } from "./lib/trackerBridge";
 import {
@@ -118,6 +119,16 @@ function SettingsIcon() {
   );
 }
 
+function TimerStyleIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="ui-icon" aria-hidden="true">
+      <rect x="4.5" y="5.8" width="15" height="12.4" rx="2.7" fill="none" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M5.2 12h13.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M9 4.2h6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function MinimizeIcon() {
   return (
     <svg viewBox="0 0 24 24" className="ui-icon" aria-hidden="true">
@@ -205,8 +216,10 @@ function InlineInfoButton(props: { tooltip: string }) {
 function WindowTitleBar(props: {
   locale: Locale;
   themeMode: ThemeMode;
+  dashboardTimerStyle: TrackingConfig["dashboardTimerStyle"];
   isMaximized: boolean;
   onToggleTheme: () => void;
+  onToggleTimerStyle: () => void;
   onToggleLocale: () => void;
   onMinimize: () => void;
   onMaximize: () => void;
@@ -237,6 +250,16 @@ function WindowTitleBar(props: {
           ) : (
             <ThemeIcon />
           )}
+        </ChromeButton>
+        <ChromeButton
+          onClick={props.onToggleTimerStyle}
+          tooltip={
+            props.locale === "zh"
+              ? `计时器：${props.dashboardTimerStyle === "dial" ? "表盘" : "翻页"}`
+              : `Timer: ${props.dashboardTimerStyle === "dial" ? "Dial" : "Flip"}`
+          }
+        >
+          <TimerStyleIcon />
         </ChromeButton>
         <ChromeButton
           onClick={props.onToggleLocale}
@@ -348,7 +371,7 @@ function DashboardLiveDial(props: { elapsedSeconds: number }) {
   const subMinuteAngle = (safeSeconds % 1800) / 5;
 
   return (
-    <div className="dashboard-live-timer-wrap">
+    <div className="dashboard-live-timer-wrap dashboard-live-timer-wrap-dial">
       <div className="dashboard-live-stopwatch" aria-label={`${primaryDisplay}:${secondDisplay}`}>
         <div className="dashboard-live-stopwatch-shell">
           <div className="dashboard-live-stopwatch-dial">
@@ -462,6 +485,160 @@ function DashboardLiveDial(props: { elapsedSeconds: number }) {
   );
 }
 
+function dashboardFlipUnitLabel(unit: "hours" | "minutes", locale: Locale) {
+  if (locale === "zh") {
+    return unit === "hours" ? "时" : "分";
+  }
+
+  return unit === "hours" ? "Hour" : "Min";
+}
+
+function formatDashboardFlipDate(currentTimeMs: number) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "2-digit",
+  })
+    .format(new Date(currentTimeMs))
+    .replace(", ", " • ")
+    .toUpperCase();
+}
+
+function DashboardFlipDigit(props: { digit: string }) {
+  const { digit } = props;
+  const [current, setCurrent] = useState(digit);
+  const [next, setNext] = useState(digit);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const queuedDigitRef = useRef<string | null>(null);
+  const currentRef = useRef(digit);
+  const nextRef = useRef(digit);
+  const isFlippingRef = useRef(false);
+
+  useEffect(() => {
+    currentRef.current = current;
+  }, [current]);
+
+  useEffect(() => {
+    nextRef.current = next;
+  }, [next]);
+
+  useEffect(() => {
+    isFlippingRef.current = isFlipping;
+  }, [isFlipping]);
+
+  useEffect(() => {
+    if (digit === currentRef.current && !isFlippingRef.current) {
+      queuedDigitRef.current = null;
+      return;
+    }
+
+    if (isFlippingRef.current) {
+      queuedDigitRef.current = digit;
+      return;
+    }
+
+    nextRef.current = digit;
+    setNext(digit);
+    setIsFlipping(true);
+  }, [digit]);
+
+  function handleAnimationEnd(event: React.AnimationEvent<HTMLDivElement>) {
+    if (event.animationName !== "dashboard-flip-bottom-in") {
+      return;
+    }
+
+    const resolvedDigit = nextRef.current;
+    currentRef.current = resolvedDigit;
+    setCurrent(resolvedDigit);
+    setIsFlipping(false);
+
+    const queuedDigit = queuedDigitRef.current;
+    queuedDigitRef.current = null;
+
+    if (queuedDigit && queuedDigit !== resolvedDigit) {
+      nextRef.current = queuedDigit;
+      setNext(queuedDigit);
+      setIsFlipping(true);
+    }
+  }
+
+  return (
+    <div className="dashboard-flip-digit">
+      {!isFlipping ? (
+        <>
+          <div className="dashboard-flip-half dashboard-flip-half-static dashboard-flip-half-top">{current}</div>
+          <div className="dashboard-flip-half dashboard-flip-half-static dashboard-flip-half-bottom">{current}</div>
+        </>
+      ) : (
+        <>
+          <div className="dashboard-flip-half dashboard-flip-half-static dashboard-flip-half-top">{next}</div>
+          <div className="dashboard-flip-half dashboard-flip-half-static dashboard-flip-half-bottom">{current}</div>
+          <div className="dashboard-flip-half dashboard-flip-half-anim dashboard-flip-half-top dashboard-flip-half-top-anim">
+            {current}
+          </div>
+          <div
+            className="dashboard-flip-half dashboard-flip-half-anim dashboard-flip-half-bottom dashboard-flip-half-bottom-anim"
+            onAnimationEnd={handleAnimationEnd}
+          >
+            {next}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DashboardFlipDigitGroup(props: { value: number }) {
+  const formatted = props.value.toString().padStart(2, "0");
+  return (
+    <div className="dashboard-flip-pair">
+      <DashboardFlipDigit digit={formatted[0]} />
+      <DashboardFlipDigit digit={formatted[1]} />
+    </div>
+  );
+}
+
+function DashboardFlipTimer(props: {
+  elapsedSeconds: number;
+  locale: Locale;
+  currentTimeMs: number;
+  currentTaskLabel: string;
+}) {
+  const safeSeconds = Math.max(0, props.elapsedSeconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  const timeLabel = `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  const dateLabel = formatDashboardFlipDate(props.currentTimeMs);
+  const taskLabel = props.currentTaskLabel.trim() || (props.locale === "zh" ? "当前专注" : "Current focus");
+
+  return (
+    <div className="dashboard-live-timer-wrap dashboard-live-timer-wrap-flip">
+      <div className="dashboard-flip-timer" aria-label={timeLabel}>
+        <div className="dashboard-flip-meta-top">{dateLabel}</div>
+        <div className="dashboard-flip-timer-readout" aria-hidden="true">
+          <DashboardFlipDigitGroup value={hours} />
+          <div className="dashboard-flip-unit-label">{dashboardFlipUnitLabel("hours", props.locale)}</div>
+          <DashboardFlipDigitGroup value={minutes} />
+          <div className="dashboard-flip-unit-label">{dashboardFlipUnitLabel("minutes", props.locale)}</div>
+          <DashboardFlipDigitGroup value={seconds} />
+        </div>
+        <div className="dashboard-flip-meta-bottom">
+          <span className="dashboard-flip-task-pill">
+            <span className="dashboard-flip-task-icon" aria-hidden="true">
+              <DashboardPulseIcon />
+            </span>
+            <span className="dashboard-flip-task-label">
+              {props.locale === "zh" ? "当前任务" : "Current task"}
+            </span>
+            <strong>{taskLabel}</strong>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function dashboardSessionSecondaryText(session: StudySession, locale: Locale) {
   if (session.primaryAppName && session.primaryDomain) {
     return `${session.primaryAppName} · ${session.primaryDomain}`;
@@ -508,10 +685,12 @@ function DashboardView(props: {
   snapshot: TrackingSnapshot;
   sessions: StudySession[];
   locale: Locale;
+  currentTimeMs: number;
+  timerStyle: TrackingConfig["dashboardTimerStyle"];
   text: Copy;
   onOpenTimeline: () => void;
 }) {
-  const { dailySummary, weeklySummary, sourceBreakdown, snapshot, sessions, locale, text, onOpenTimeline } = props;
+  const { dailySummary, weeklySummary, sourceBreakdown, snapshot, sessions, locale, currentTimeMs, timerStyle, text, onOpenTimeline } = props;
   const dashboardText = locale === "zh"
       ? {
         currentTitle: "实时追踪",
@@ -541,11 +720,10 @@ function DashboardView(props: {
         topSource: "Top source",
         details: "Details",
       };
-  const [now, setNow] = useState(() => Date.now());
   const weeklyTotal = weeklySummary.reduce((sum, day) => sum + day.totalStudyMinutes, 0);
   const trendDays = useMemo(
-    () => buildRecentSevenDays(weeklySummary, new Date(now)),
-    [now, weeklySummary],
+    () => buildRecentSevenDays(weeklySummary, new Date(currentTimeMs)),
+    [currentTimeMs, weeklySummary],
   );
   const maxMinutes = Math.max(...trendDays.map((day) => day.totalStudyMinutes), 1);
   const bestDay = trendDays.length > 0
@@ -556,7 +734,7 @@ function DashboardView(props: {
     [sessions],
   );
   const isIdleSnapshot = snapshot.currentSource === "Idle";
-  const elapsedSeconds = isIdleSnapshot ? 0 : Math.max(0, Math.floor((now - new Date(snapshot.startedAt).getTime()) / 1000));
+  const elapsedSeconds = isIdleSnapshot ? 0 : Math.max(0, Math.floor((currentTimeMs - new Date(snapshot.startedAt).getTime()) / 1000));
   const snapshotSourceKind = snapshot.sourceType === "browser" ? "site" : "app";
   const metricCards = [
     {
@@ -593,11 +771,6 @@ function DashboardView(props: {
       })),
     [sessions, sourceBreakdown],
   );
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   return (
     <div className="page dashboard-page">
@@ -641,7 +814,16 @@ function DashboardView(props: {
           </section>
 
           <section className="dashboard-stopwatch-panel">
-            <DashboardLiveDial elapsedSeconds={elapsedSeconds} />
+            {timerStyle === "flip" ? (
+              <DashboardFlipTimer
+                currentTaskLabel={snapshot.currentSource}
+                currentTimeMs={currentTimeMs}
+                elapsedSeconds={elapsedSeconds}
+                locale={locale}
+              />
+            ) : (
+              <DashboardLiveDial elapsedSeconds={elapsedSeconds} />
+            )}
           </section>
         </div>
 
@@ -2372,6 +2554,20 @@ function SettingsView(props: {
                   onChange={props.onThemeChange}
                 />
               </div>
+              <div className="setting-card setting-row">
+                <div className="setting-title-inline">
+                  <strong>{text.settings.fields.timerStyle}</strong>
+                  <InlineInfoButton tooltip={text.settings.helpers.timerStyle} />
+                </div>
+                <SegmentedButtonGroup
+                  value={config.dashboardTimerStyle}
+                  options={[
+                    { label: text.settings.values.timerDial, value: "dial" },
+                    { label: text.settings.values.timerFlip, value: "flip" },
+                  ]}
+                  onChange={(next) => void props.onUpdateSettings({ dashboardTimerStyle: next })}
+                />
+              </div>
             </div>
           </article>
 
@@ -2522,6 +2718,7 @@ function SettingsView(props: {
 
 export default function AppShell() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
+  const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
   const [locale, setLocale] = useState<Locale>(() => getInitialLocale());
   const [themeMode, setThemeMode] = useState<ThemeMode>(() => getInitialThemeMode());
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => resolveTheme(getInitialThemeMode()));
@@ -2536,6 +2733,34 @@ export default function AppShell() {
   const [config, setConfig] = useState<TrackingConfig | null>(null);
   const [settingsMeta, setSettingsMeta] = useState<SettingsMeta | null>(null);
   const text = useMemo(() => copy[locale], [locale]);
+
+  useEffect(() => {
+    let intervalId: number | null = null;
+    let timeoutId: number | null = null;
+
+    const startAlignedClock = () => {
+      setCurrentTimeMs(Date.now());
+
+      const delayToNextSecond = Math.max(0, 1000 - (Date.now() % 1000));
+      timeoutId = window.setTimeout(() => {
+        setCurrentTimeMs(Date.now());
+        intervalId = window.setInterval(() => {
+          setCurrentTimeMs(Date.now());
+        }, 1000);
+      }, delayToNextSecond);
+    };
+
+    startAlignedClock();
+
+    return () => {
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+      if (intervalId !== null) {
+        window.clearInterval(intervalId);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     async function load() {
@@ -2613,8 +2838,15 @@ export default function AppShell() {
   }
 
   async function handleUpdateSettings(input: Partial<TrackingConfig>) {
+    setConfig((current) => (current ? { ...current, ...input } : current));
     const updated = await trackerBridge.updateSettings(input);
     setConfig(updated);
+  }
+
+  function handleToggleTimerStyle() {
+    const current = config?.dashboardTimerStyle ?? "dial";
+    const next = current === "dial" ? "flip" : "dial";
+    void handleUpdateSettings({ dashboardTimerStyle: next });
   }
 
   async function handleCreateRule(input: RuleInput) {
@@ -2652,12 +2884,14 @@ export default function AppShell() {
   return (
     <div className="desktop-shell">
       <WindowTitleBar
+        dashboardTimerStyle={config?.dashboardTimerStyle ?? "dial"}
         isMaximized={isMaximized}
         locale={locale}
         onClose={() => void trackerBridge.closeWindow()}
         onMaximize={() => void handleToggleMaximize()}
         onMinimize={() => void trackerBridge.minimizeWindow()}
         onToggleLocale={() => setLocale((current) => (current === "zh" ? "en" : "zh"))}
+        onToggleTimerStyle={handleToggleTimerStyle}
         onToggleTheme={() => setThemeMode((current) => cycleTheme(current))}
         themeMode={themeMode}
       />
@@ -2686,48 +2920,50 @@ export default function AppShell() {
             <div className="workspace-panel">
                 {activeView === "dashboard" ? (
                   <DashboardView
+                    currentTimeMs={currentTimeMs}
                     dailySummary={daily}
                     locale={locale}
                     onOpenTimeline={() => setActiveView("timeline")}
                     sessions={sessions}
                     snapshot={snapshot}
                     sourceBreakdown={sources}
+                    timerStyle={config?.dashboardTimerStyle ?? "dial"}
                     text={text}
                     weeklySummary={weekly}
                   />
-              ) : null}
-              {activeView === "timeline" ? (
-                <TimelineView
-                  events={events}
-                  locale={locale}
-                  onDeleteStudySession={handleDeleteStudySession}
-                  sessions={sessions}
-                  text={text}
-                />
-              ) : null}
-              {activeView === "rules" ? (
-                <RulesView
-                  locale={locale}
-                  onCreateRule={handleCreateRule}
-                  onDeleteRule={handleDeleteRule}
-                  onUpdateRule={handleUpdateRule}
-                  rules={rules}
-                  text={text}
-                />
-              ) : null}
-              {activeView === "settings" ? (
-                <SettingsView
-                  config={config}
-                  locale={locale}
-                  meta={settingsMeta}
-                  onLocaleChange={setLocale}
-                  onThemeChange={setThemeMode}
-                  onTrackingStatusChange={handleTrackingStatusChange}
-                  onUpdateSettings={handleUpdateSettings}
-                  text={text}
-                  themeMode={themeMode}
-                />
-              ) : null}
+                ) : null}
+                {activeView === "timeline" ? (
+                  <TimelineView
+                    events={events}
+                    locale={locale}
+                    onDeleteStudySession={handleDeleteStudySession}
+                    sessions={sessions}
+                    text={text}
+                  />
+                ) : null}
+                {activeView === "rules" ? (
+                  <RulesView
+                    locale={locale}
+                    onCreateRule={handleCreateRule}
+                    onDeleteRule={handleDeleteRule}
+                    onUpdateRule={handleUpdateRule}
+                    rules={rules}
+                    text={text}
+                  />
+                ) : null}
+                {activeView === "settings" ? (
+                  <SettingsView
+                    config={config}
+                    locale={locale}
+                    meta={settingsMeta}
+                    onLocaleChange={setLocale}
+                    onThemeChange={setThemeMode}
+                    onTrackingStatusChange={handleTrackingStatusChange}
+                    onUpdateSettings={handleUpdateSettings}
+                    text={text}
+                    themeMode={themeMode}
+                  />
+                ) : null}
             </div>
           </div>
         </main>

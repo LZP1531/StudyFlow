@@ -98,6 +98,7 @@ export interface TrackingSnapshot {
 export interface TrackingConfig {
   themeMode: "dark" | "light" | "system";
   locale: "zh" | "en";
+  dashboardTimerStyle: "dial" | "flip";
   idleThresholdMinutes: number;
   launchOnStartup: boolean;
   minimizeToTray: boolean;
@@ -127,6 +128,7 @@ export interface RuleInput {
 export interface SettingsUpdate {
   themeMode?: TrackingConfig["themeMode"];
   locale?: TrackingConfig["locale"];
+  dashboardTimerStyle?: TrackingConfig["dashboardTimerStyle"];
   idleThresholdMinutes?: number;
   launchOnStartup?: boolean;
   minimizeToTray?: boolean;

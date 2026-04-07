@@ -65,6 +65,7 @@ export type Copy = {
       startup: string;
       tray: string;
       idle: string;
+      timerStyle: string;
       export: string;
       lang: string;
       theme: string;
@@ -92,6 +93,8 @@ export type Copy = {
       copyAction: string;
       copied: string;
       exported: string;
+      timerDial: string;
+      timerFlip: string;
     };
     statusCards: {
       tracking: string;
@@ -114,6 +117,7 @@ export type Copy = {
       export: string;
       language: string;
       theme: string;
+      timerStyle: string;
       startup: string;
       tray: string;
       lastSyncAt: string;
@@ -199,6 +203,7 @@ export const copy: Record<Locale, Copy> = {
         startup: "开机自动启动",
         tray: "最小化到托盘",
         idle: "空闲阈值",
+        timerStyle: "计时器样式",
         export: "本地数据导出",
         lang: "语言",
         theme: "主题",
@@ -226,6 +231,8 @@ export const copy: Record<Locale, Copy> = {
         copyAction: "复制信息",
         copied: "已复制",
         exported: "导出成功",
+        timerDial: "表盘",
+        timerFlip: "翻页",
       },
       statusCards: {
         tracking: "Tracking status",
@@ -248,6 +255,7 @@ export const copy: Record<Locale, Copy> = {
         export: "将本地 SQLite 数据导出为单独文件，方便备份或迁移。",
         language: "切换整个应用界面的显示语言。",
         theme: "切换应用外观主题，可选深色、浅色或跟随系统。",
+        timerStyle: "切换总览页第三列的计时器显示样式，可在表盘和翻页之间切换。",
         startup: "开启后，Windows 登录后会自动启动 StudyFlow。",
         tray: "关闭主窗口时改为缩到系统托盘，而不是直接退出。",
         lastSyncAt: "显示最近一次收到浏览器扩展活动同步的时间。",
@@ -331,6 +339,7 @@ export const copy: Record<Locale, Copy> = {
         startup: "Launch on startup",
         tray: "Minimize to tray",
         idle: "Idle threshold",
+        timerStyle: "Timer style",
         export: "Local export",
         lang: "Language",
         theme: "Theme",
@@ -358,6 +367,8 @@ export const copy: Record<Locale, Copy> = {
         copyAction: "Copy info",
         copied: "Copied",
         exported: "Exported",
+        timerDial: "Dial",
+        timerFlip: "Flip",
       },
       statusCards: {
         tracking: "Tracking status",
@@ -380,6 +391,7 @@ export const copy: Record<Locale, Copy> = {
         export: "Exports the local SQLite data into a standalone file for backup or migration.",
         language: "Changes the display language across the app interface.",
         theme: "Changes the app appearance theme: dark, light, or system.",
+        timerStyle: "Switches the dashboard timer in the third column between dial and flip styles.",
         startup: "When enabled, StudyFlow launches automatically after Windows sign-in.",
         tray: "When enabled, closing the main window sends the app to the system tray instead of quitting.",
         lastSyncAt: "Shows when the latest browser-extension activity sync was received.",

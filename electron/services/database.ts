@@ -72,6 +72,7 @@ export class StudyflowDatabase {
     this.db.pragma("journal_mode = WAL");
     this.resetLegacySchemaIfNeeded();
     this.createSchema();
+    this.ensureSettingsColumns();
     this.seedInitialData();
     this.pruneBrowserActivityCache();
   }
@@ -484,6 +485,7 @@ export class StudyflowDatabase {
         `select
            theme_mode,
            locale,
+           dashboard_timer_style,
            idle_threshold_minutes,
            launch_on_startup,
            minimize_to_tray,
@@ -495,6 +497,7 @@ export class StudyflowDatabase {
       | {
           theme_mode: TrackingConfig["themeMode"];
           locale: TrackingConfig["locale"];
+          dashboard_timer_style: TrackingConfig["dashboardTimerStyle"] | null;
           idle_threshold_minutes: number;
           launch_on_startup: number;
           minimize_to_tray: number;
@@ -509,6 +512,7 @@ export class StudyflowDatabase {
     return {
       themeMode: row.theme_mode,
       locale: row.locale,
+      dashboardTimerStyle: row.dashboard_timer_style ?? "dial",
       idleThresholdMinutes: row.idle_threshold_minutes,
       launchOnStartup: Boolean(row.launch_on_startup),
       minimizeToTray: Boolean(row.minimize_to_tray),
@@ -527,6 +531,7 @@ export class StudyflowDatabase {
         `update settings
          set theme_mode = @themeMode,
              locale = @locale,
+             dashboard_timer_style = @dashboardTimerStyle,
              idle_threshold_minutes = @idleThresholdMinutes,
              launch_on_startup = @launchOnStartup,
              minimize_to_tray = @minimizeToTray,
@@ -790,6 +795,7 @@ export class StudyflowDatabase {
         id text primary key,
         theme_mode text not null,
         locale text not null,
+        dashboard_timer_style text not null default 'dial',
         idle_threshold_minutes integer not null,
         launch_on_startup integer not null,
         minimize_to_tray integer not null,
@@ -905,6 +911,7 @@ export class StudyflowDatabase {
            id,
            theme_mode,
            locale,
+           dashboard_timer_style,
            idle_threshold_minutes,
            launch_on_startup,
            minimize_to_tray,
@@ -914,6 +921,7 @@ export class StudyflowDatabase {
            'default',
            @themeMode,
            @locale,
+           @dashboardTimerStyle,
            @idleThresholdMinutes,
            @launchOnStartup,
            @minimizeToTray,
@@ -928,6 +936,15 @@ export class StudyflowDatabase {
         allowLocalExports: mockTrackingConfig.allowLocalExports ? 1 : 0,
         updatedAt: new Date().toISOString(),
       });
+  }
+
+  private ensureSettingsColumns() {
+    const columns = this.db.prepare(`pragma table_info(settings)`).all() as Array<{ name: string }>;
+    const hasTimerStyle = columns.some((column) => column.name === "dashboard_timer_style");
+
+    if (!hasTimerStyle) {
+      this.db.prepare(`alter table settings add column dashboard_timer_style text not null default 'dial'`).run();
+    }
   }
 
   private getReferenceDate() {
