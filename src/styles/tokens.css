@@ -1,0 +1,64 @@
+:root {
+  font-family: "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+  color: var(--text-primary);
+  background: var(--app-background);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color-scheme: light;
+  --app-background:
+    radial-gradient(circle at top left, rgba(255, 171, 92, 0.18), transparent 22%),
+    radial-gradient(circle at top right, rgba(112, 196, 255, 0.14), transparent 20%),
+    linear-gradient(180deg, #eef1f6 0%, #e9edf4 48%, #e4e9f0 100%);
+  --shell-bg: rgba(249, 250, 252, 0.78);
+  --shell-border: rgba(255, 255, 255, 0.8);
+  --shell-shadow: 0 30px 80px rgba(15, 23, 42, 0.12);
+  --workspace-bg: rgba(255, 255, 255, 0.72);
+  --workspace-border: rgba(255, 255, 255, 0.82);
+  --panel-bg: rgba(255, 255, 255, 0.56);
+  --panel-border: rgba(255, 255, 255, 0.6);
+  --soft-fill: rgba(255, 255, 255, 0.42);
+  --nav-fill: rgba(255, 255, 255, 0.34);
+  --text-primary: #131b2b;
+  --text-secondary: rgba(19, 27, 43, 0.7);
+  --text-tertiary: rgba(19, 27, 43, 0.5);
+  --accent: #2563eb;
+  --accent-soft: rgba(37, 99, 235, 0.12);
+  --warm-accent: #ff7f50;
+  --success-accent: #0f9f8f;
+  --warning-accent: #f59e0b;
+  --danger-accent: #ef4444;
+  --track-bg: rgba(148, 163, 184, 0.16);
+  --light-panel-shadow: 0 10px 24px rgba(148, 163, 184, 0.12);
+  --light-panel-shadow-strong: 0 16px 32px rgba(59, 130, 246, 0.14);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --app-background:
+    radial-gradient(circle at top left, rgba(247, 166, 102, 0.11), transparent 24%),
+    radial-gradient(circle at top right, rgba(70, 173, 255, 0.1), transparent 22%),
+    linear-gradient(180deg, #0a1020 0%, #0c1424 52%, #09111d 100%);
+  --shell-bg: rgba(10, 17, 31, 0.84);
+  --shell-border: rgba(255, 255, 255, 0.08);
+  --shell-shadow: 0 34px 90px rgba(2, 6, 23, 0.5);
+  --workspace-bg: rgba(14, 22, 37, 0.78);
+  --workspace-border: rgba(255, 255, 255, 0.06);
+  --panel-bg: rgba(18, 28, 45, 0.68);
+  --panel-border: rgba(255, 255, 255, 0.08);
+  --soft-fill: rgba(255, 255, 255, 0.045);
+  --nav-fill: rgba(255, 255, 255, 0.04);
+  --text-primary: #f8fafc;
+  --text-secondary: rgba(226, 232, 240, 0.78);
+  --text-tertiary: rgba(226, 232, 240, 0.55);
+  --accent: #8ac5ff;
+  --accent-soft: rgba(125, 211, 252, 0.11);
+  --warm-accent: #fdba74;
+  --success-accent: #2dd4bf;
+  --warning-accent: #fbbf24;
+  --danger-accent: #fca5a5;
+  --track-bg: rgba(255, 255, 255, 0.08);
+  --light-panel-shadow: none;
+  --light-panel-shadow-strong: none;
+}

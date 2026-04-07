@@ -1,4 +1,4 @@
-import type { StudyflowApi } from "./types/study";
+import type { StudyflowApi } from "./study";
 
 declare global {
   interface Window {

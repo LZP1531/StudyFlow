@@ -1,0 +1,23 @@
+.source-list,.settings-stack,.compact-session-list,.settings-groups{display:grid;gap:.36rem}
+.settings-status-card,.settings-section{padding:.68rem .82rem .58rem}
+.settings-status-card{display:grid;gap:.2rem;position:relative;overflow:visible}
+.settings-status-label,.settings-section-description,.setting-subtext{margin:0;color:var(--text-secondary)}
+.settings-section-head{display:grid;gap:.12rem;margin-bottom:.3rem}
+.settings-feedback{justify-self:start}
+.settings-page .page-toolbar{padding:.8rem .95rem}
+.settings-groups{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start;gap:.36rem .44rem}
+.settings-header-inline{display:flex;align-items:start;justify-content:space-between;gap:1rem;padding:0 .2rem}
+.settings-header-inline .eyebrow,.settings-header-inline h1{margin:0}
+.settings-header-inline .muted-tag{align-self:center}
+.settings-column{display:grid;align-content:start;gap:.28rem}
+.settings-page .setting-row{min-height:58px;align-items:center;padding-block:.42rem}
+.settings-page .readonly-row{min-height:58px}
+.settings-page .setting-row> :first-child{flex:1;min-width:0}
+.settings-page .setting-row> :last-child{flex-shrink:0}
+.settings-page .setting-title-inline{align-items:center}
+.settings-page .setting-title-inline strong{line-height:1.2}
+.settings-page .segmented-control{max-width:100%;gap:.12rem;padding:.12rem}
+.settings-page .segmented-option{min-width:54px;padding:.38rem .58rem}
+.settings-page .secondary-button{padding-inline:.9rem}
+.settings-status-title .inline-info-button:after{width:11.5rem;min-width:11.5rem;max-width:11.5rem;line-height:1.45}
+

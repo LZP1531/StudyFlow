@@ -1,8 +1,6 @@
-﻿export type Locale = "zh" | "en";
-export type ThemeMode = "light" | "dark" | "system";
-export type ViewKey = "dashboard" | "timeline" | "rules" | "settings";
+﻿import type { Locale, ThemeMode, ViewKey } from "../types/app";
 
-export type Copy = {
+export type Messages = {
   appTagline: string;
   loading: string;
   nav: Record<ViewKey, { label: string; hint: string }>;
@@ -125,7 +123,7 @@ export type Copy = {
   };
 };
 
-export const copy: Record<Locale, Copy> = {
+export const messages: Record<Locale, Messages> = {
   zh: {
     appTagline: "本地学习追踪",
     loading: "正在加载 StudyFlow...",
