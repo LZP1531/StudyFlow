@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import type { Locale } from "../../types/app";
+
+const FLIP_ANIMATION_TOTAL_MS = 750;
 
 function dashboardFlipUnitLabel(unit: "hours" | "minutes", locale: Locale) {
   if (locale === "zh") {
     return unit === "hours" ? "时" : "分";
   }
-  return unit === "hours" ? "Hour" : "Min";
+  return unit === "hours" ? "HR" : "MIN";
 }
 
 function formatDashboardFlipDate(currentTimeMs: number) {
@@ -15,7 +17,7 @@ function formatDashboardFlipDate(currentTimeMs: number) {
     day: "2-digit",
   })
     .format(new Date(currentTimeMs))
-    .replace(", ", " • ")
+    .replace(", ", " - ")
     .toUpperCase();
 }
 
@@ -28,6 +30,7 @@ function DashboardFlipDigit(props: { digit: string }) {
   const currentRef = useRef(digit);
   const nextRef = useRef(digit);
   const isFlippingRef = useRef(false);
+  const flipTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     currentRef.current = current;
@@ -40,6 +43,33 @@ function DashboardFlipDigit(props: { digit: string }) {
   useEffect(() => {
     isFlippingRef.current = isFlipping;
   }, [isFlipping]);
+
+  function clearFlipTimeout() {
+    if (flipTimeoutRef.current !== null) {
+      window.clearTimeout(flipTimeoutRef.current);
+      flipTimeoutRef.current = null;
+    }
+  }
+
+  function finishFlip() {
+    clearFlipTimeout();
+
+    const resolvedDigit = nextRef.current;
+    currentRef.current = resolvedDigit;
+    setCurrent(resolvedDigit);
+    setIsFlipping(false);
+
+    const queuedDigit = queuedDigitRef.current;
+    queuedDigitRef.current = null;
+
+    if (queuedDigit && queuedDigit !== resolvedDigit) {
+      nextRef.current = queuedDigit;
+      setNext(queuedDigit);
+      setIsFlipping(true);
+    }
+  }
+
+  useEffect(() => () => clearFlipTimeout(), []);
 
   useEffect(() => {
     if (digit === currentRef.current && !isFlippingRef.current) {
@@ -57,24 +87,24 @@ function DashboardFlipDigit(props: { digit: string }) {
     setIsFlipping(true);
   }, [digit]);
 
+  useEffect(() => {
+    if (!isFlipping) {
+      clearFlipTimeout();
+      return;
+    }
+
+    clearFlipTimeout();
+    flipTimeoutRef.current = window.setTimeout(() => {
+      finishFlip();
+    }, FLIP_ANIMATION_TOTAL_MS);
+  }, [isFlipping, next]);
+
   function handleAnimationEnd(event: React.AnimationEvent<HTMLDivElement>) {
     if (event.animationName !== "dashboard-flip-bottom-in") {
       return;
     }
 
-    const resolvedDigit = nextRef.current;
-    currentRef.current = resolvedDigit;
-    setCurrent(resolvedDigit);
-    setIsFlipping(false);
-
-    const queuedDigit = queuedDigitRef.current;
-    queuedDigitRef.current = null;
-
-    if (queuedDigit && queuedDigit !== resolvedDigit) {
-      nextRef.current = queuedDigit;
-      setNext(queuedDigit);
-      setIsFlipping(true);
-    }
+    finishFlip();
   }
 
   return (
@@ -128,9 +158,9 @@ export function DashboardFlipTimer(props: {
         <div className="dashboard-flip-meta-top">{dateLabel}</div>
         <div className="dashboard-flip-timer-readout" aria-hidden="true">
           <DashboardFlipDigitGroup value={hours} />
-          <div className="dashboard-flip-unit-label">{dashboardFlipUnitLabel("hours", props.locale)}</div>
+          <div className={`dashboard-flip-unit-label ${props.locale === "en" ? "is-en" : "is-zh"}`}>{dashboardFlipUnitLabel("hours", props.locale)}</div>
           <DashboardFlipDigitGroup value={minutes} />
-          <div className="dashboard-flip-unit-label">{dashboardFlipUnitLabel("minutes", props.locale)}</div>
+          <div className={`dashboard-flip-unit-label ${props.locale === "en" ? "is-en" : "is-zh"}`}>{dashboardFlipUnitLabel("minutes", props.locale)}</div>
           <DashboardFlipDigitGroup value={seconds} />
         </div>
         <div className="dashboard-flip-meta-bottom">
