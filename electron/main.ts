@@ -6,6 +6,10 @@ import { StudyflowDatabase } from "./services/database";
 import { captureActiveWindow } from "./services/tracking";
 
 const isDev = !app.isPackaged;
+const trackingIntervals = {
+  trackingSampleMs: 15_000,
+} as const;
+
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
@@ -207,7 +211,7 @@ function setupIpc() {
 }
 
 function startTrackingLoop() {
-  sampleTimer = setInterval(async () => {
+  const captureAndRecordSample = async () => {
     if (!trackingEnabled) {
       return;
     }
@@ -218,7 +222,12 @@ function startTrackingLoop() {
     if (sample) {
       database.recordSample(sample);
     }
-  }, 60_000);
+  };
+
+  void captureAndRecordSample();
+  sampleTimer = setInterval(() => {
+    void captureAndRecordSample();
+  }, trackingIntervals.trackingSampleMs);
 }
 
 app.whenReady().then(async () => {

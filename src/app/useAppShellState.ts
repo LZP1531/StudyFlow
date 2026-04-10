@@ -15,6 +15,11 @@ import type {
   TrackingSnapshot,
 } from "../types/study";
 
+const refreshIntervals = {
+  snapshotRefreshMs: 4_000,
+  summaryRefreshMs: 20_000,
+} as const;
+
 export function useAppShellState() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
@@ -32,6 +37,53 @@ export function useAppShellState() {
   const [config, setConfig] = useState<TrackingConfig | null>(null);
   const [settingsMeta, setSettingsMeta] = useState<SettingsMeta | null>(null);
   const text = useMemo(() => messages[locale], [locale]);
+
+  async function refreshSnapshot() {
+    const nextSnapshot = await trackerBridge.getTrackingSnapshot();
+    setSnapshot((current) => {
+      if (
+        current &&
+        current.isTracking === nextSnapshot.isTracking &&
+        current.currentSource === nextSnapshot.currentSource &&
+        current.currentApp === nextSnapshot.currentApp &&
+        current.startedAt === nextSnapshot.startedAt &&
+        current.confidence === nextSnapshot.confidence &&
+        current.sourceType === nextSnapshot.sourceType &&
+        current.classification === nextSnapshot.classification
+      ) {
+        return current;
+      }
+
+      return nextSnapshot;
+    });
+  }
+
+  async function refreshSummary(activeView: ViewKey) {
+    const [nextDaily, nextWeekly, nextSources, nextSessions, nextEvents, nextRules, nextSettingsMeta] = await Promise.all([
+      trackerBridge.getDailySummary(),
+      trackerBridge.getWeeklySummary(),
+      trackerBridge.listSourceBreakdown(),
+      trackerBridge.listStudySessions(),
+      activeView === "timeline" ? trackerBridge.listActivityEvents() : Promise.resolve<ActivityEvent[] | null>(null),
+      activeView === "rules" ? trackerBridge.listRules() : Promise.resolve<Rule[] | null>(null),
+      activeView === "settings" ? trackerBridge.getSettingsMeta() : Promise.resolve<SettingsMeta | null>(null),
+    ]);
+
+    setDaily(nextDaily);
+    setWeekly(nextWeekly);
+    setSources(nextSources);
+    setSessions(nextSessions);
+
+    if (nextEvents) {
+      setEvents(nextEvents);
+    }
+    if (nextRules) {
+      setRules(nextRules);
+    }
+    if (nextSettingsMeta) {
+      setSettingsMeta(nextSettingsMeta);
+    }
+  }
 
   useEffect(() => {
     let intervalId: number | null = null;
@@ -62,6 +114,8 @@ export function useAppShellState() {
   }, []);
 
   useEffect(() => {
+    let isDisposed = false;
+
     async function load() {
       const results = await Promise.all([
         trackerBridge.getTrackingSnapshot(),
@@ -75,6 +129,10 @@ export function useAppShellState() {
         trackerBridge.getWindowState(),
         trackerBridge.getSettingsMeta(),
       ]);
+
+      if (isDisposed) {
+        return;
+      }
 
       setSnapshot(results[0]);
       setDaily(results[1]);
@@ -91,14 +149,100 @@ export function useAppShellState() {
     }
 
     void load();
+
+    return () => {
+      isDisposed = true;
+    };
   }, []);
 
   useEffect(() => {
-    if (activeView !== "settings") {
-      return;
-    }
+    let isDisposed = false;
+    let snapshotIntervalId: number | null = null;
+    let summaryIntervalId: number | null = null;
 
-    void trackerBridge.getSettingsMeta().then(setSettingsMeta);
+    const runSnapshotRefresh = async () => {
+      const nextSnapshot = await trackerBridge.getTrackingSnapshot();
+      if (!isDisposed) {
+        setSnapshot((current) => {
+          if (
+            current &&
+            current.isTracking === nextSnapshot.isTracking &&
+            current.currentSource === nextSnapshot.currentSource &&
+            current.currentApp === nextSnapshot.currentApp &&
+            current.startedAt === nextSnapshot.startedAt &&
+            current.confidence === nextSnapshot.confidence &&
+            current.sourceType === nextSnapshot.sourceType &&
+            current.classification === nextSnapshot.classification
+          ) {
+            return current;
+          }
+
+          return nextSnapshot;
+        });
+      }
+    };
+
+    const runSummaryRefresh = async () => {
+      const [nextDaily, nextWeekly, nextSources, nextSessions, nextEvents, nextRules, nextSettingsMeta] = await Promise.all([
+        trackerBridge.getDailySummary(),
+        trackerBridge.getWeeklySummary(),
+        trackerBridge.listSourceBreakdown(),
+        trackerBridge.listStudySessions(),
+        activeView === "timeline" ? trackerBridge.listActivityEvents() : Promise.resolve<ActivityEvent[] | null>(null),
+        activeView === "rules" ? trackerBridge.listRules() : Promise.resolve<Rule[] | null>(null),
+        activeView === "settings" ? trackerBridge.getSettingsMeta() : Promise.resolve<SettingsMeta | null>(null),
+      ]);
+
+      if (isDisposed) {
+        return;
+      }
+
+      setDaily(nextDaily);
+      setWeekly(nextWeekly);
+      setSources(nextSources);
+      setSessions(nextSessions);
+
+      if (nextEvents) {
+        setEvents(nextEvents);
+      }
+      if (nextRules) {
+        setRules(nextRules);
+      }
+      if (nextSettingsMeta) {
+        setSettingsMeta(nextSettingsMeta);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void runSnapshotRefresh();
+        void runSummaryRefresh();
+      }
+    };
+
+    void runSnapshotRefresh();
+    void runSummaryRefresh();
+
+    snapshotIntervalId = window.setInterval(() => {
+      void runSnapshotRefresh();
+    }, refreshIntervals.snapshotRefreshMs);
+
+    summaryIntervalId = window.setInterval(() => {
+      void runSummaryRefresh();
+    }, refreshIntervals.summaryRefreshMs);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isDisposed = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (snapshotIntervalId !== null) {
+        window.clearInterval(snapshotIntervalId);
+      }
+      if (summaryIntervalId !== null) {
+        window.clearInterval(summaryIntervalId);
+      }
+    };
   }, [activeView, config]);
 
   useEffect(() => {
@@ -169,11 +313,14 @@ export function useAppShellState() {
     await trackerBridge.deleteStudySession(id);
     setSessions((current) => current.filter((session) => session.id !== id));
     setEvents((current) => current.filter((event) => event.id !== id));
+    await refreshSummary("timeline");
   }
 
   async function handleTrackingStatusChange(enabled: boolean) {
     const updatedMeta = await trackerBridge.setTrackingEnabled(enabled);
     setSettingsMeta(updatedMeta);
+    await refreshSnapshot();
+    await refreshSummary(activeView);
   }
 
   return {

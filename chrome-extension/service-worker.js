@@ -30,6 +30,11 @@ async function syncCurrentTab(tabId) {
   await postActiveTab(tab);
 }
 
+async function syncActiveTab() {
+  const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true }).catch(() => []);
+  await postActiveTab(tab);
+}
+
 chrome.tabs.onActivated.addListener(async ({ tabId }) => {
   await syncCurrentTab(tabId);
 });
@@ -38,4 +43,20 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.active) {
     await postActiveTab(tab);
   }
+});
+
+chrome.windows.onFocusChanged.addListener(async (windowId) => {
+  if (windowId === chrome.windows.WINDOW_ID_NONE) {
+    return;
+  }
+
+  await syncActiveTab();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  void syncActiveTab();
+});
+
+chrome.runtime.onInstalled.addListener(() => {
+  void syncActiveTab();
 });

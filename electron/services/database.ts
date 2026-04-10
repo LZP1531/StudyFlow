@@ -9,7 +9,6 @@ import {
   sessions as mockSessions,
   sourceBreakdown as mockSourceBreakdown,
   trackingConfig as mockTrackingConfig,
-  trackingSnapshot as mockTrackingSnapshot,
   weeklySummary as mockWeeklySummary,
 } from "../../src/data/mockStudyData";
 import type {
@@ -30,6 +29,15 @@ import type {
 import type { ActiveWindowSnapshot } from "./tracking";
 
 const sourceColors = ["#f97316", "#14b8a6", "#facc15", "#38bdf8", "#fb7185", "#a78bfa"];
+const neutralTrackingSnapshot: TrackingSnapshot = {
+  isTracking: false,
+  currentSource: "Idle",
+  currentApp: "StudyFlow",
+  startedAt: new Date(0).toISOString(),
+  confidence: 0,
+  sourceType: "system",
+  classification: "neutral",
+};
 
 interface ResolvedRule {
   classification: RuleClassification;
@@ -104,7 +112,7 @@ export class StudyflowDatabase {
       | undefined;
 
     if (!latest) {
-      return mockTrackingSnapshot;
+      return neutralTrackingSnapshot;
     }
 
     return {
@@ -1102,6 +1110,16 @@ export class StudyflowDatabase {
         sourceLabel: "Idle",
         matchedRuleId: null,
         confidence: 0.25,
+      };
+    }
+
+    if (sample.isInternalApp) {
+      return {
+        classification: "ignore",
+        category: "general",
+        sourceLabel: "StudyFlow",
+        matchedRuleId: null,
+        confidence: 1,
       };
     }
 
