@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Messages } from "../../i18n/messages";
 import type { Locale } from "../../types/app";
 import { formatDurationSeconds, formatTimeRange } from "../../lib/formatters";
@@ -28,6 +28,13 @@ function TimelineRecordIcon(props: { kind: TimelineIconKind }) {
   );
 }
 
+const timelineRenderConfig = {
+  initialVisibleCount: 120,
+  loadMoreStep: 80,
+  loadMoreThresholdPx: 320,
+  smoothScrollRecordThreshold: 200,
+} as const;
+
 export function TimelineView(props: {
   sessions: StudySession[];
   events: ActivityEvent[];
@@ -43,6 +50,9 @@ export function TimelineView(props: {
   const [selection, setSelection] = useState<TimelineDetailSelection>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<StudySession | null>(null);
+  const [visibleCount, setVisibleCount] = useState<number>(timelineRenderConfig.initialVisibleCount);
+  const scrollAreaRef = useRef<HTMLDivElement | null>(null);
+  const scrollRafRef = useRef<number | null>(null);
 
   const timelineText = locale === "zh"
     ? {
@@ -128,23 +138,71 @@ export function TimelineView(props: {
       }),
     [classificationFilter, events, normalizedSearch, sourceFilter],
   );
+  const visibleSessions = useMemo(
+    () => filteredSessions.slice(0, visibleCount),
+    [filteredSessions, visibleCount],
+  );
+  const visibleEvents = useMemo(
+    () => filteredEvents.slice(0, visibleCount),
+    [filteredEvents, visibleCount],
+  );
   const hasAnyData = viewMode === "sessions" ? sessions.length > 0 : events.length > 0;
   const isFilteredEmpty = viewMode === "sessions" ? filteredSessions.length === 0 : filteredEvents.length === 0;
+  const hasMoreRecords = viewMode === "sessions" ? visibleSessions.length < filteredSessions.length : visibleEvents.length < filteredEvents.length;
 
   useEffect(() => {
-    const scrollArea = document.querySelector<HTMLDivElement>(".timeline-scroll-area");
+    setVisibleCount(timelineRenderConfig.initialVisibleCount);
+  }, [viewMode, classificationFilter, sourceFilter, normalizedSearch]);
+
+  useEffect(() => {
+    const scrollArea = scrollAreaRef.current;
     if (!scrollArea) {
       return;
     }
 
     const handleScroll = () => {
-      setShowScrollTop(scrollArea.scrollTop > 240);
+      if (scrollRafRef.current !== null) {
+        return;
+      }
+
+      scrollRafRef.current = window.requestAnimationFrame(() => {
+        scrollRafRef.current = null;
+        const nextShowScrollTop = scrollArea.scrollTop > 240;
+        setShowScrollTop((current) => (current === nextShowScrollTop ? current : nextShowScrollTop));
+
+        const distanceToBottom = scrollArea.scrollHeight - scrollArea.scrollTop - scrollArea.clientHeight;
+        if (distanceToBottom <= timelineRenderConfig.loadMoreThresholdPx) {
+          setVisibleCount((current) => {
+            const totalCount = viewMode === "sessions" ? filteredSessions.length : filteredEvents.length;
+            return current >= totalCount ? current : Math.min(totalCount, current + timelineRenderConfig.loadMoreStep);
+          });
+        }
+      });
     };
 
     handleScroll();
     scrollArea.addEventListener("scroll", handleScroll);
-    return () => scrollArea.removeEventListener("scroll", handleScroll);
-  }, [viewMode]);
+    return () => {
+      scrollArea.removeEventListener("scroll", handleScroll);
+      if (scrollRafRef.current !== null) {
+        window.cancelAnimationFrame(scrollRafRef.current);
+        scrollRafRef.current = null;
+      }
+    };
+  }, [filteredEvents.length, filteredSessions.length, viewMode]);
+
+  function handleScrollToTop() {
+    const scrollArea = scrollAreaRef.current;
+    if (!scrollArea) {
+      return;
+    }
+
+    const totalVisibleRecords = viewMode === "sessions" ? visibleSessions.length : visibleEvents.length;
+    scrollArea.scrollTo({
+      top: 0,
+      behavior: totalVisibleRecords <= timelineRenderConfig.smoothScrollRecordThreshold ? "smooth" : "auto",
+    });
+  }
 
   return (
     <div className="page timeline-page">
@@ -192,7 +250,7 @@ export function TimelineView(props: {
           </div>
         </div>
 
-        <div className="timeline-scroll-area">
+        <div className="timeline-scroll-area" ref={scrollAreaRef}>
           <section className="timeline-record-list">
             {!hasAnyData ? (
               <article className="timeline-empty-state">
@@ -207,7 +265,7 @@ export function TimelineView(props: {
             ) : null}
 
             {viewMode === "sessions"
-              ? filteredSessions.map((session) => (
+              ? visibleSessions.map((session) => (
                   <article key={session.id} className="timeline-record-row">
                     <div className="timeline-record-time">
                       <strong>{formatTimeRange(session.startedAt, session.endedAt, locale)}</strong>
@@ -231,7 +289,7 @@ export function TimelineView(props: {
                     </div>
                   </article>
                 ))
-              : filteredEvents.map((event) => (
+              : visibleEvents.map((event) => (
                   <article key={event.id} className="timeline-record-row">
                     <div className="timeline-record-time">
                       <strong>{formatTimeRange(event.startedAt, event.endedAt, locale)}</strong>
@@ -249,11 +307,23 @@ export function TimelineView(props: {
                     </div>
                   </article>
                 ))}
+
+            {hasMoreRecords ? (
+              <div className="timeline-load-more-shell">
+                <button
+                  className="ghost-button timeline-load-more-button"
+                  onClick={() => setVisibleCount((current) => current + timelineRenderConfig.loadMoreStep)}
+                  type="button"
+                >
+                  {locale === "zh" ? "加载更多" : "Load more"}
+                </button>
+              </div>
+            ) : null}
           </section>
         </div>
 
         {showScrollTop ? (
-          <button className="timeline-scroll-top" onClick={() => document.querySelector<HTMLDivElement>(".timeline-scroll-area")?.scrollTo({ top: 0, behavior: "smooth" })} type="button">
+          <button className="timeline-scroll-top" onClick={handleScrollToTop} type="button">
             {timelineText.backToTop}
           </button>
         ) : null}
