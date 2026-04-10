@@ -1,13 +1,43 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Messages } from "../../i18n/messages";
 import type { Locale } from "../../types/app";
-import type { Classification, Rule, RuleInput } from "../../types/study";
+import type { Classification, Rule, RuleInput, StudyCategory } from "../../types/study";
 import { SearchIcon } from "../../components/icons";
 import { SegmentedButtonGroup } from "../../components/SegmentedButtonGroup";
-import { categoryLabel, classificationLabel } from "../shared/viewLabels";
+import { classificationLabel } from "../shared/viewLabels";
 import { RuleCreateModal } from "./RuleCreateModal";
 import { RuleDetailPanel } from "./RuleDetailPanel";
-import { objectKindLabel, ruleObjectKind, RuleObjectKind } from "./rules.helpers";
+import { ruleObjectKind, type RuleObjectKind } from "./rules.helpers";
+
+function categoryLabel(category: StudyCategory, locale: Locale) {
+  const zh: Record<StudyCategory, string> = {
+    flashcard: "闪卡",
+    note: "笔记",
+    reading: "阅读",
+    course: "课程",
+    video_course: "视频课程",
+    coding: "编程",
+    general: "通用",
+  };
+  const en: Record<StudyCategory, string> = {
+    flashcard: "Flashcard",
+    note: "Notes",
+    reading: "Reading",
+    course: "Course",
+    video_course: "Video course",
+    coding: "Coding",
+    general: "General",
+  };
+
+  return locale === "zh" ? zh[category] : en[category];
+}
+
+function objectKindLabel(kind: RuleObjectKind, locale: Locale) {
+  if (locale === "zh") {
+    return kind === "app" ? "应用" : "网站";
+  }
+  return kind === "app" ? "App" : "Site";
+}
 
 export function RulesView(props: {
   locale: Locale;
@@ -42,14 +72,24 @@ export function RulesView(props: {
   const filteredRules = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
     return localRules.filter((rule) => {
-      const matchesSearch = !searchValue || rule.name.toLowerCase().includes(searchValue) || rule.pattern.toLowerCase().includes(searchValue) || rule.sourceLabel.toLowerCase().includes(searchValue);
-      const matchesClassification = classificationFilter === "all" || rule.classification === classificationFilter;
-      const matchesSource = sourceFilter === "all" || ruleObjectKind(rule.type) === sourceFilter;
+      const matchesSearch =
+        !searchValue ||
+        rule.name.toLowerCase().includes(searchValue) ||
+        rule.pattern.toLowerCase().includes(searchValue) ||
+        rule.sourceLabel.toLowerCase().includes(searchValue);
+      const matchesClassification =
+        classificationFilter === "all" || rule.classification === classificationFilter;
+      const matchesSource =
+        sourceFilter === "all" || ruleObjectKind(rule.type) === sourceFilter;
       return matchesSearch && matchesClassification && matchesSource;
     });
   }, [classificationFilter, localRules, search, sourceFilter]);
 
-  const selectedRule = filteredRules.find((rule) => rule.id === selectedRuleId) ?? localRules.find((rule) => rule.id === selectedRuleId) ?? filteredRules[0] ?? null;
+  const selectedRule =
+    filteredRules.find((rule) => rule.id === selectedRuleId) ??
+    localRules.find((rule) => rule.id === selectedRuleId) ??
+    filteredRules[0] ??
+    null;
 
   useEffect(() => {
     if (selectedRule && selectedRule.id !== selectedRuleId) {
@@ -83,10 +123,23 @@ export function RulesView(props: {
           <div className="rules-toolbar">
             <div className="rules-search-row">
               <label className="rule-search-shell">
-                <span className="rule-search-icon" aria-hidden="true"><SearchIcon /></span>
-                <input className="rule-search-input" onChange={(event) => setSearch(event.target.value)} placeholder={locale === "zh" ? "搜索规则名称、匹配内容、展示标签" : "Search name, pattern, or label"} value={search} />
+                <span className="rule-search-icon" aria-hidden="true">
+                  <SearchIcon />
+                </span>
+                <input
+                  className="rule-search-input"
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder={
+                    locale === "zh"
+                      ? "搜索规则名称、匹配内容或显示标签"
+                      : "Search name, pattern, or label"
+                  }
+                  value={search}
+                />
               </label>
-              <button className="primary-button" onClick={() => setIsCreateOpen(true)} type="button">+ {text.rules.add}</button>
+              <button className="primary-button" onClick={() => setIsCreateOpen(true)} type="button">
+                + {text.rules.add}
+              </button>
             </div>
             <SegmentedButtonGroup
               value={sourceFilter}
@@ -112,19 +165,29 @@ export function RulesView(props: {
           <div className="rules-list">
             {filteredRules.map((rule) => {
               const objectKind = ruleObjectKind(rule.type);
-              const displayClassification = (rule.classification === "ignore" ? "neutral" : rule.classification) as Classification;
+              const displayClassification =
+                (rule.classification === "ignore" ? "neutral" : rule.classification) as Classification;
               return (
-                <button className={`rule-list-item ${selectedRule?.id === rule.id ? "active" : ""}`} key={rule.id} onClick={() => setSelectedRuleId(rule.id)} type="button">
+                <button
+                  className={`rule-list-item ${selectedRule?.id === rule.id ? "active" : ""}`}
+                  key={rule.id}
+                  onClick={() => setSelectedRuleId(rule.id)}
+                  type="button"
+                >
                   <div className="rule-list-head">
                     <strong>{rule.name}</strong>
-                    <span className={`toggle ${rule.enabled ? "on" : ""}`}>{rule.enabled ? text.rules.enabled : text.rules.disabled}</span>
+                    <span className={`toggle ${rule.enabled ? "on" : ""}`}>
+                      {rule.enabled ? text.rules.enabled : text.rules.disabled}
+                    </span>
                   </div>
                   <div className="rule-list-line compact">
                     <span className="rule-object-pill">{objectKindLabel(objectKind, locale)}</span>
                     <span className="rule-list-pattern">{rule.pattern}</span>
                   </div>
                   <div className="rule-list-meta">
-                    <span className={`classification ${displayClassification}`}>{classificationLabel(displayClassification, text)}</span>
+                    <span className={`classification ${displayClassification}`}>
+                      {classificationLabel(displayClassification, text)}
+                    </span>
                     <span>{categoryLabel(rule.category, locale)}</span>
                     <span>{locale === "zh" ? `今日命中 ${rule.hitsToday}` : `Hits ${rule.hitsToday}`}</span>
                     <span>P{rule.priority}</span>
@@ -137,7 +200,14 @@ export function RulesView(props: {
 
         <div className="rules-detail-panel glass soft-panel">
           {selectedRule ? (
-            <RuleDetailPanel locale={locale} onDelete={handleDeleteRule} onNotice={setFeedback} onUpdate={handleUpdateRule} rule={selectedRule} text={text} />
+            <RuleDetailPanel
+              locale={locale}
+              onDelete={handleDeleteRule}
+              onNotice={setFeedback}
+              onUpdate={handleUpdateRule}
+              rule={selectedRule}
+              text={text}
+            />
           ) : (
             <div className="rules-empty-state">
               <strong>{locale === "zh" ? "没有匹配的规则" : "No matching rules"}</strong>
@@ -148,7 +218,14 @@ export function RulesView(props: {
         </div>
       </section>
 
-      {isCreateOpen ? <RuleCreateModal locale={locale} onClose={() => setIsCreateOpen(false)} onCreate={handleCreateRule} text={text} /> : null}
+      {isCreateOpen ? (
+        <RuleCreateModal
+          locale={locale}
+          onClose={() => setIsCreateOpen(false)}
+          onCreate={handleCreateRule}
+          text={text}
+        />
+      ) : null}
     </div>
   );
 }
