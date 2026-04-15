@@ -151,8 +151,8 @@ export function DashboardView(props: {
         topSource: "Top source",
         details: "Details",
       };
-  const weeklyTotal = weeklySummary.reduce((sum, day) => sum + day.totalStudyMinutes, 0);
   const trendDays = useMemo(() => buildRecentSevenDays(weeklySummary, new Date(currentTimeMs)), [currentTimeMs, weeklySummary]);
+  const weeklyTotal = trendDays.reduce((sum, day) => sum + day.totalStudyMinutes, 0);
   const maxMinutes = Math.max(...trendDays.map((day) => day.totalStudyMinutes), 1);
   const bestDay = trendDays.length > 0 ? trendDays.reduce((current, day) => (day.totalStudyMinutes > current.totalStudyMinutes ? day : current)) : dailySummary;
   const recentSessions = useMemo(() => [...sessions].sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()).slice(0, 5), [sessions]);

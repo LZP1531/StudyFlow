@@ -1,5 +1,6 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, Menu, nativeImage, nativeTheme, powerMonitor, Tray } from "electron";
 import { copyFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { ExtensionBridge } from "./services/extension-bridge";
 import { StudyflowDatabase } from "./services/database";
@@ -18,6 +19,17 @@ let trackingEnabled = true;
 
 const database = new StudyflowDatabase(join(app.getPath("userData"), "studyflow.sqlite"));
 const extensionBridge = new ExtensionBridge();
+
+function resolveDesktopIconPath() {
+  const candidatePaths = [
+    join(app.getAppPath(), "public", "studyflow-icon.png"),
+    join(app.getAppPath(), "dist", "studyflow-icon.png"),
+    join(__dirname, "../../public/studyflow-icon.png"),
+    join(__dirname, "../../dist/studyflow-icon.png"),
+  ];
+
+  return candidatePaths.find((candidate) => existsSync(candidate)) ?? null;
+}
 
 function getResolvedWindowTheme(themeMode: "light" | "dark" | "system") {
   if (themeMode === "system") {
@@ -38,6 +50,7 @@ function applyWindowChrome(theme: "light" | "dark") {
 async function createWindow() {
   const settings = database.getSettings();
   const resolvedTheme = getResolvedWindowTheme(settings.themeMode);
+  const iconPath = resolveDesktopIconPath();
 
   mainWindow = new BrowserWindow({
     width: 1320,
@@ -50,6 +63,7 @@ async function createWindow() {
     roundedCorners: true,
     backgroundColor: "#00000000",
     autoHideMenuBar: true,
+    icon: iconPath ?? undefined,
     webPreferences: {
       preload: join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -74,7 +88,8 @@ async function createWindow() {
 }
 
 function setupTray() {
-  const icon = nativeImage.createEmpty();
+  const iconPath = resolveDesktopIconPath();
+  const icon = iconPath ? nativeImage.createFromPath(iconPath) : nativeImage.createEmpty();
   tray = new Tray(icon);
   tray.setToolTip("StudyFlow");
   tray.setContextMenu(

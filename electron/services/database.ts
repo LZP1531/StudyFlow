@@ -1,16 +1,7 @@
-﻿import Database from "better-sqlite3";
+import Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import {
-  activityEvents as mockActivityEvents,
-  dailySummary as mockDailySummary,
-  rules as mockRules,
-  sessions as mockSessions,
-  sourceBreakdown as mockSourceBreakdown,
-  trackingConfig as mockTrackingConfig,
-  weeklySummary as mockWeeklySummary,
-} from "../../src/data/mockStudyData";
 import type {
   ActivityEvent,
   Classification,
@@ -37,6 +28,16 @@ const neutralTrackingSnapshot: TrackingSnapshot = {
   confidence: 0,
   sourceType: "system",
   classification: "neutral",
+};
+
+const defaultTrackingConfig: TrackingConfig = {
+  themeMode: "dark",
+  locale: "zh",
+  dashboardTimerStyle: "dial",
+  idleThresholdMinutes: 4,
+  launchOnStartup: true,
+  minimizeToTray: true,
+  allowLocalExports: true,
 };
 
 interface ResolvedRule {
@@ -81,7 +82,7 @@ export class StudyflowDatabase {
     this.resetLegacySchemaIfNeeded();
     this.createSchema();
     this.ensureSettingsColumns();
-    this.seedInitialData();
+    this.ensureDefaultSettings();
     this.pruneBrowserActivityCache();
   }
 
@@ -129,7 +130,13 @@ export class StudyflowDatabase {
   getDailySummary(): DailySummary {
     const referenceDate = this.getReferenceDate();
     if (!referenceDate) {
-      return mockDailySummary;
+      return {
+        date: this.getTodayDateKey(),
+        totalStudyMinutes: 0,
+        focusedSessions: 0,
+        distractionsMinutes: 0,
+        topSource: "Study",
+      };
     }
 
     const result = this.db
@@ -191,7 +198,7 @@ export class StudyflowDatabase {
     }>;
 
     if (rows.length === 0) {
-      return mockWeeklySummary;
+      return [];
     }
 
     return rows
@@ -221,7 +228,7 @@ export class StudyflowDatabase {
   listSourceBreakdown(): SourceBreakdown[] {
     const referenceDate = this.getReferenceDate();
     if (!referenceDate) {
-      return mockSourceBreakdown;
+      return [];
     }
 
     const rows = this.db
@@ -235,7 +242,7 @@ export class StudyflowDatabase {
       .all(referenceDate) as Array<{ source_label: string; duration_seconds: number }>;
 
     if (rows.length === 0) {
-      return mockSourceBreakdown;
+      return [];
     }
 
     const total = rows.reduce((sum, row) => sum + row.duration_seconds, 0) || 1;
@@ -354,7 +361,7 @@ export class StudyflowDatabase {
          from rules r
          order by r.enabled desc, r.priority desc, r.name asc`,
       )
-      .all(this.getReferenceDate() ?? mockDailySummary.date) as Array<{
+      .all(this.getReferenceDate() ?? this.getTodayDateKey()) as Array<{
       id: string;
       name: string;
       type: RuleType;
@@ -514,7 +521,7 @@ export class StudyflowDatabase {
       | undefined;
 
     if (!row) {
-      return mockTrackingConfig;
+      return defaultTrackingConfig;
     }
 
     return {
@@ -830,87 +837,33 @@ export class StudyflowDatabase {
     `);
   }
 
-  private seedInitialData() {
-    const count = this.db.prepare("select count(*) as count from activity_events").get() as { count: number };
-    if (count.count > 0) {
+  private ensureSettingsColumns() {
+    const columns = this.db.prepare(`pragma table_info(settings)`).all() as Array<{ name: string }>;
+    const hasTimerStyle = columns.some((column) => column.name === "dashboard_timer_style");
+
+    if (!hasTimerStyle) {
+      this.db.prepare(`alter table settings add column dashboard_timer_style text not null default 'dial'`).run();
+    }
+  }
+
+  private getReferenceDate() {
+    const row = this.db
+      .prepare(`select date(max(started_at)) as date from activity_events`)
+      .get() as { date: string | null };
+    return row.date;
+  }
+
+  private getTodayDateKey() {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  private ensureDefaultSettings() {
+    const row = this.db
+      .prepare(`select id from settings where id = 'default'`)
+      .get() as { id: string } | undefined;
+
+    if (row) {
       return;
-    }
-
-    for (const event of mockActivityEvents) {
-      this.insertActivityEvent(event);
-    }
-
-    for (const session of mockSessions) {
-      this.db
-        .prepare(
-          `insert into study_sessions (
-             id,
-             started_at,
-             ended_at,
-             duration_seconds,
-             classification,
-             category,
-             source_label,
-             primary_app_name,
-             primary_domain,
-             note,
-             session_type,
-             created_at,
-             updated_at
-           ) values (
-             @id,
-             @startedAt,
-             @endedAt,
-             @durationSeconds,
-             @classification,
-             @category,
-             @sourceLabel,
-             @primaryAppName,
-             @primaryDomain,
-             @note,
-             @sessionType,
-             @createdAt,
-             @updatedAt
-           )`,
-        )
-        .run(session);
-    }
-
-    for (const rule of mockRules) {
-      this.db
-        .prepare(
-          `insert into rules (
-             id,
-             name,
-             type,
-             pattern,
-             classification,
-             category,
-             source_label,
-             priority,
-             enabled,
-             preset_key,
-             created_at,
-             updated_at
-           ) values (
-             @id,
-             @name,
-             @type,
-             @pattern,
-             @classification,
-             @category,
-             @sourceLabel,
-             @priority,
-             @enabled,
-             @presetKey,
-             @createdAt,
-             @updatedAt
-           )`,
-        )
-        .run({
-          ...rule,
-          enabled: rule.enabled ? 1 : 0,
-        });
     }
 
     this.db
@@ -938,28 +891,12 @@ export class StudyflowDatabase {
          )`,
       )
       .run({
-        ...mockTrackingConfig,
-        launchOnStartup: mockTrackingConfig.launchOnStartup ? 1 : 0,
-        minimizeToTray: mockTrackingConfig.minimizeToTray ? 1 : 0,
-        allowLocalExports: mockTrackingConfig.allowLocalExports ? 1 : 0,
+        ...defaultTrackingConfig,
+        launchOnStartup: defaultTrackingConfig.launchOnStartup ? 1 : 0,
+        minimizeToTray: defaultTrackingConfig.minimizeToTray ? 1 : 0,
+        allowLocalExports: defaultTrackingConfig.allowLocalExports ? 1 : 0,
         updatedAt: new Date().toISOString(),
       });
-  }
-
-  private ensureSettingsColumns() {
-    const columns = this.db.prepare(`pragma table_info(settings)`).all() as Array<{ name: string }>;
-    const hasTimerStyle = columns.some((column) => column.name === "dashboard_timer_style");
-
-    if (!hasTimerStyle) {
-      this.db.prepare(`alter table settings add column dashboard_timer_style text not null default 'dial'`).run();
-    }
-  }
-
-  private getReferenceDate() {
-    const row = this.db
-      .prepare(`select date(max(started_at)) as date from activity_events`)
-      .get() as { date: string | null };
-    return row.date;
   }
 
   private insertActivityEvent(event: ActivityEvent) {

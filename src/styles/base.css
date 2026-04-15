@@ -39,3 +39,29 @@ button {
   place-items: center;
   color: var(--text-primary);
 }
+
+.loading-screen-error {
+  padding: 1.5rem;
+}
+
+.app-status-panel {
+  display: grid;
+  gap: 0.55rem;
+  max-width: 34rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--workspace-border);
+  border-radius: 1rem;
+  background: var(--workspace-bg);
+  box-shadow: var(--light-panel-shadow);
+  text-align: center;
+}
+
+.app-status-panel strong,
+.app-status-panel p {
+  margin: 0;
+}
+
+.app-status-panel p {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}

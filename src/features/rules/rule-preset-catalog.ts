@@ -95,7 +95,7 @@ export function buildRulePresetCatalog(locale: Locale): RulePresetCategory[] {
             draft: createPresetDraft({
               name: "Codex 编程",
               type: "app_name_equals",
-              pattern: "Codex.exe",
+              pattern: "Codex",
               classification: "study",
               category: "coding",
               sourceLabel: "Codex 编程",
@@ -366,7 +366,7 @@ export function buildRulePresetCatalog(locale: Locale): RulePresetCategory[] {
           draft: createPresetDraft({
             name: "Codex coding",
             type: "app_name_equals",
-            pattern: "Codex.exe",
+            pattern: "Codex",
             classification: "study",
             category: "coding",
             sourceLabel: "Codex coding",

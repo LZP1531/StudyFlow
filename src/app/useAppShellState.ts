@@ -36,52 +36,63 @@ export function useAppShellState() {
   const [rules, setRules] = useState<Rule[]>([]);
   const [config, setConfig] = useState<TrackingConfig | null>(null);
   const [settingsMeta, setSettingsMeta] = useState<SettingsMeta | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const text = useMemo(() => messages[locale], [locale]);
 
   async function refreshSnapshot() {
-    const nextSnapshot = await trackerBridge.getTrackingSnapshot();
-    setSnapshot((current) => {
-      if (
-        current &&
-        current.isTracking === nextSnapshot.isTracking &&
-        current.currentSource === nextSnapshot.currentSource &&
-        current.currentApp === nextSnapshot.currentApp &&
-        current.startedAt === nextSnapshot.startedAt &&
-        current.confidence === nextSnapshot.confidence &&
-        current.sourceType === nextSnapshot.sourceType &&
-        current.classification === nextSnapshot.classification
-      ) {
-        return current;
-      }
+    try {
+      const nextSnapshot = await trackerBridge.getTrackingSnapshot();
+      setErrorMessage(null);
+      setSnapshot((current) => {
+        if (
+          current &&
+          current.isTracking === nextSnapshot.isTracking &&
+          current.currentSource === nextSnapshot.currentSource &&
+          current.currentApp === nextSnapshot.currentApp &&
+          current.startedAt === nextSnapshot.startedAt &&
+          current.confidence === nextSnapshot.confidence &&
+          current.sourceType === nextSnapshot.sourceType &&
+          current.classification === nextSnapshot.classification
+        ) {
+          return current;
+        }
 
-      return nextSnapshot;
-    });
+        return nextSnapshot;
+      });
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to refresh StudyFlow snapshot.");
+    }
   }
 
   async function refreshSummary(activeView: ViewKey) {
-    const [nextDaily, nextWeekly, nextSources, nextSessions, nextEvents, nextRules, nextSettingsMeta] = await Promise.all([
-      trackerBridge.getDailySummary(),
-      trackerBridge.getWeeklySummary(),
-      trackerBridge.listSourceBreakdown(),
-      trackerBridge.listStudySessions(),
-      activeView === "timeline" ? trackerBridge.listActivityEvents() : Promise.resolve<ActivityEvent[] | null>(null),
-      activeView === "rules" ? trackerBridge.listRules() : Promise.resolve<Rule[] | null>(null),
-      activeView === "settings" ? trackerBridge.getSettingsMeta() : Promise.resolve<SettingsMeta | null>(null),
-    ]);
+    try {
+      const [nextDaily, nextWeekly, nextSources, nextSessions, nextEvents, nextRules, nextSettingsMeta] = await Promise.all([
+        trackerBridge.getDailySummary(),
+        trackerBridge.getWeeklySummary(),
+        trackerBridge.listSourceBreakdown(),
+        trackerBridge.listStudySessions(),
+        activeView === "timeline" ? trackerBridge.listActivityEvents() : Promise.resolve<ActivityEvent[] | null>(null),
+        activeView === "rules" ? trackerBridge.listRules() : Promise.resolve<Rule[] | null>(null),
+        activeView === "settings" ? trackerBridge.getSettingsMeta() : Promise.resolve<SettingsMeta | null>(null),
+      ]);
 
-    setDaily(nextDaily);
-    setWeekly(nextWeekly);
-    setSources(nextSources);
-    setSessions(nextSessions);
+      setErrorMessage(null);
+      setDaily(nextDaily);
+      setWeekly(nextWeekly);
+      setSources(nextSources);
+      setSessions(nextSessions);
 
-    if (nextEvents) {
-      setEvents(nextEvents);
-    }
-    if (nextRules) {
-      setRules(nextRules);
-    }
-    if (nextSettingsMeta) {
-      setSettingsMeta(nextSettingsMeta);
+      if (nextEvents) {
+        setEvents(nextEvents);
+      }
+      if (nextRules) {
+        setRules(nextRules);
+      }
+      if (nextSettingsMeta) {
+        setSettingsMeta(nextSettingsMeta);
+      }
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Failed to refresh StudyFlow data.");
     }
   }
 
@@ -117,35 +128,42 @@ export function useAppShellState() {
     let isDisposed = false;
 
     async function load() {
-      const results = await Promise.all([
-        trackerBridge.getTrackingSnapshot(),
-        trackerBridge.getDailySummary(),
-        trackerBridge.getWeeklySummary(),
-        trackerBridge.listSourceBreakdown(),
-        trackerBridge.listActivityEvents(),
-        trackerBridge.listStudySessions(),
-        trackerBridge.listRules(),
-        trackerBridge.getSettings(),
-        trackerBridge.getWindowState(),
-        trackerBridge.getSettingsMeta(),
-      ]);
+      try {
+        const results = await Promise.all([
+          trackerBridge.getTrackingSnapshot(),
+          trackerBridge.getDailySummary(),
+          trackerBridge.getWeeklySummary(),
+          trackerBridge.listSourceBreakdown(),
+          trackerBridge.listActivityEvents(),
+          trackerBridge.listStudySessions(),
+          trackerBridge.listRules(),
+          trackerBridge.getSettings(),
+          trackerBridge.getWindowState(),
+          trackerBridge.getSettingsMeta(),
+        ]);
 
-      if (isDisposed) {
-        return;
+        if (isDisposed) {
+          return;
+        }
+
+        setErrorMessage(null);
+        setSnapshot(results[0]);
+        setDaily(results[1]);
+        setWeekly(results[2]);
+        setSources(results[3]);
+        setEvents(results[4]);
+        setSessions(results[5]);
+        setRules(results[6]);
+        setConfig(results[7]);
+        setLocale(results[7].locale);
+        setThemeMode(results[7].themeMode);
+        setIsMaximized(results[8].isMaximized);
+        setSettingsMeta(results[9]);
+      } catch (error) {
+        if (!isDisposed) {
+          setErrorMessage(error instanceof Error ? error.message : "Failed to connect to StudyFlow desktop services.");
+        }
       }
-
-      setSnapshot(results[0]);
-      setDaily(results[1]);
-      setWeekly(results[2]);
-      setSources(results[3]);
-      setEvents(results[4]);
-      setSessions(results[5]);
-      setRules(results[6]);
-      setConfig(results[7]);
-      setLocale(results[7].locale);
-      setThemeMode(results[7].themeMode);
-      setIsMaximized(results[8].isMaximized);
-      setSettingsMeta(results[9]);
     }
 
     void load();
@@ -339,6 +357,7 @@ export function useAppShellState() {
     text,
     themeMode,
     weekly,
+    errorMessage,
     actions: {
       closeWindow: () => void trackerBridge.closeWindow(),
       createRule: handleCreateRule,

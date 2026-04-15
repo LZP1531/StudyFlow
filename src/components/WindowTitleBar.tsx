@@ -1,7 +1,6 @@
 import type { Locale, ThemeMode } from "../types/app";
 import type { TrackingConfig } from "../types/study";
 import {
-  AppIcon,
   CloseIcon,
   MaximizeIcon,
   MinimizeIcon,
@@ -46,7 +45,7 @@ export function WindowTitleBar(props: {
     <header className="window-titlebar drag-region">
       <div className="titlebar-brand no-drag">
         <div className="brand-mark brand-mark-small">
-          <AppIcon />
+          <img className="brand-logo" src="/studyflow-icon.png" alt="StudyFlow" />
         </div>
         <strong>StudyFlow</strong>
       </div>

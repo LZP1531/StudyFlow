@@ -15,6 +15,7 @@ export default function AppShell() {
     config,
     currentTimeMs,
     daily,
+    errorMessage,
     events,
     isMaximized,
     locale,
@@ -28,6 +29,17 @@ export default function AppShell() {
     weekly,
     actions,
   } = useAppShellState();
+
+  if (errorMessage) {
+    return (
+      <div className="loading-screen loading-screen-error">
+        <div className="app-status-panel">
+          <strong>{locale === "zh" ? "未连接到桌面服务" : "Desktop Bridge Unavailable"}</strong>
+          <p>{errorMessage}</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!snapshot || !daily || !config || !settingsMeta) {
     return <div className="loading-screen">{text.loading}</div>;

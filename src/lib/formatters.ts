@@ -12,7 +12,23 @@ export function formatMinutes(minutes: number, locale: Locale) {
 }
 
 export function formatDurationSeconds(seconds: number, locale: Locale) {
-  return formatMinutes(Math.max(0, Math.round(seconds / 60)), locale);
+  const safeSeconds = Math.max(0, Math.round(seconds));
+  const minutes = Math.floor(safeSeconds / 60);
+  const restSeconds = safeSeconds % 60;
+
+  if (locale === "zh") {
+    if (minutes === 0) {
+      return `${restSeconds} 秒`;
+    }
+
+    return `${minutes} 分 ${restSeconds.toString().padStart(2, "0")} 秒`;
+  }
+
+  if (minutes === 0) {
+    return `${restSeconds}s`;
+  }
+
+  return `${minutes}m ${restSeconds.toString().padStart(2, "0")}s`;
 }
 
 export function formatTimeRange(startedAt: string, endedAt: string | null, locale: Locale) {
