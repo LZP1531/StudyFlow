@@ -21,6 +21,7 @@ import {
 } from "./timeline.helpers";
 
 type TimelineRangePreset = "today" | "last7days" | "last30days" | "all";
+type TimelineSortOrder = "desc" | "asc";
 
 function TimelineRecordIcon(props: { kind: TimelineIconKind }) {
   return (
@@ -122,6 +123,12 @@ function recordMatchesPreset(startedAt: string, preset: TimelineRangePreset) {
   return startedAtMs >= range.start && startedAtMs <= range.end;
 }
 
+function compareTimelineStartedAt(startedAtA: string, startedAtB: string, sortOrder: TimelineSortOrder) {
+  const timeA = new Date(startedAtA).getTime();
+  const timeB = new Date(startedAtB).getTime();
+  return sortOrder === "asc" ? timeA - timeB : timeB - timeA;
+}
+
 export function TimelineView(props: {
   sessions: StudySession[];
   events: ActivityEvent[];
@@ -134,6 +141,7 @@ export function TimelineView(props: {
   const [rangePreset, setRangePreset] = useState<TimelineRangePreset>("today");
   const [classificationFilter, setClassificationFilter] = useState<TimelineClassificationFilter>("all");
   const [sourceFilter, setSourceFilter] = useState<TimelineSourceFilter>("all");
+  const [sortOrder, setSortOrder] = useState<TimelineSortOrder>("desc");
   const [search, setSearch] = useState("");
   const [selection, setSelection] = useState<TimelineDetailSelection>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -153,6 +161,8 @@ export function TimelineView(props: {
         last7days: "近7天",
         last30days: "近一个月",
         allRange: "全部",
+        descending: "倒序",
+        ascending: "正序",
         rangeLabel: "当前窗口",
         rangeSummary: "学习 {minutes} / {sessions} 条学习记录 / {events} 条详细记录",
         searchPlaceholder: "搜索来源 / 应用 / 域名",
@@ -179,6 +189,8 @@ export function TimelineView(props: {
         last7days: "Last 7 days",
         last30days: "Last 30 days",
         allRange: "All",
+        descending: "Descending",
+        ascending: "Ascending",
         rangeLabel: "Window",
         rangeSummary: "Study {minutes} / {sessions} study records / {events} detailed records",
         searchPlaceholder: "Search source / app / domain",
@@ -256,8 +268,17 @@ export function TimelineView(props: {
     [classificationFilter, normalizedSearch, rangeFilteredEvents, sourceFilter],
   );
 
-  const visibleSessions = useMemo(() => filteredSessions.slice(0, visibleCount), [filteredSessions, visibleCount]);
-  const visibleEvents = useMemo(() => filteredEvents.slice(0, visibleCount), [filteredEvents, visibleCount]);
+  const sortedSessions = useMemo(
+    () => [...filteredSessions].sort((left, right) => compareTimelineStartedAt(left.startedAt, right.startedAt, sortOrder)),
+    [filteredSessions, sortOrder],
+  );
+  const sortedEvents = useMemo(
+    () => [...filteredEvents].sort((left, right) => compareTimelineStartedAt(left.startedAt, right.startedAt, sortOrder)),
+    [filteredEvents, sortOrder],
+  );
+
+  const visibleSessions = useMemo(() => sortedSessions.slice(0, visibleCount), [sortedSessions, visibleCount]);
+  const visibleEvents = useMemo(() => sortedEvents.slice(0, visibleCount), [sortedEvents, visibleCount]);
   const hasAnyData = viewMode === "sessions" ? rangeFilteredSessions.length > 0 : rangeFilteredEvents.length > 0;
   const isFilteredEmpty = viewMode === "sessions" ? filteredSessions.length === 0 : filteredEvents.length === 0;
   const hasMoreRecords = viewMode === "sessions" ? visibleSessions.length < filteredSessions.length : visibleEvents.length < filteredEvents.length;
@@ -269,7 +290,7 @@ export function TimelineView(props: {
 
   useEffect(() => {
     setVisibleCount(timelineRenderConfig.initialVisibleCount);
-  }, [viewMode, classificationFilter, sourceFilter, normalizedSearch, rangePreset]);
+  }, [viewMode, classificationFilter, sourceFilter, normalizedSearch, rangePreset, sortOrder]);
 
   useEffect(() => {
     const scrollArea = scrollAreaRef.current;
@@ -373,7 +394,14 @@ export function TimelineView(props: {
                   <div />
                 )}
                 <div className="timeline-inline-controls timeline-inline-controls-right">
-                <SegmentedButtonGroup value={rangePreset} options={rangePresetOptions} onChange={setRangePreset} />
+                  <SegmentedButtonGroup value={rangePreset} options={rangePresetOptions} onChange={setRangePreset} />
+                  <button
+                    className="timeline-sort-toggle"
+                    onClick={() => setSortOrder((current) => (current === "desc" ? "asc" : "desc"))}
+                    type="button"
+                  >
+                    {sortOrder === "desc" ? timelineText.descending : timelineText.ascending}
+                  </button>
                 </div>
               </div>
             </div>

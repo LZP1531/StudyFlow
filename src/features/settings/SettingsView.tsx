@@ -28,6 +28,8 @@ export function SettingsView(props: {
   }
 
   const idleOptions = buildIdleOptions(locale);
+  const idleOptionValues = new Set(idleOptions.map((option) => option.value));
+  const idleSelectionValue = idleOptionValues.has(config.idleThresholdMinutes) ? config.idleThresholdMinutes : idleOptions[0]?.value ?? 5;
   const statusCards = buildSettingsStatusCards(text, meta);
   const diagnosticsRows = buildSettingsDiagnosticRows(text, locale, meta);
 
@@ -155,7 +157,7 @@ export function SettingsView(props: {
                   <strong>{text.settings.fields.idle}</strong>
                   <InlineInfoButton tooltip={text.settings.helpers.idle} />
                 </div>
-                <SegmentedButtonGroup value={String(config.idleThresholdMinutes)} options={idleOptions.map((option) => ({ label: option.label, value: String(option.value) }))} onChange={(next) => void props.onUpdateSettings({ idleThresholdMinutes: Number(next) })} />
+                <SegmentedButtonGroup value={String(idleSelectionValue)} options={idleOptions.map((option) => ({ label: option.label, value: String(option.value) }))} onChange={(next) => void props.onUpdateSettings({ idleThresholdMinutes: Number(next) })} />
               </div>
               <div className="setting-card setting-row">
                 <div className="setting-title-inline">

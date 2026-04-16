@@ -4,10 +4,10 @@ import type { SettingsMeta } from "../../types/study";
 
 export function buildIdleOptions(locale: Locale) {
   return [
-    { value: 1, label: locale === "zh" ? "1 分钟" : "1 min" },
     { value: 5, label: locale === "zh" ? "5 分钟" : "5 min" },
-    { value: 10, label: locale === "zh" ? "10 分钟" : "10 min" },
     { value: 20, label: locale === "zh" ? "20 分钟" : "20 min" },
+    { value: 40, label: locale === "zh" ? "40 分钟" : "40 min" },
+    { value: 60, label: locale === "zh" ? "60 分钟" : "60 min" },
   ];
 }
 

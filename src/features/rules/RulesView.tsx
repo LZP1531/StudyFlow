@@ -8,6 +8,7 @@ import { classificationLabel } from "../shared/viewLabels";
 import { RuleCreateModal } from "./RuleCreateModal";
 import { RuleDetailPanel } from "./RuleDetailPanel";
 import { ruleObjectKind, type RuleObjectKind } from "./rules.helpers";
+import type { RuleCreateSeed } from "../../app/useAppShellState";
 
 function categoryLabel(category: StudyCategory, locale: Locale) {
   const zh: Record<StudyCategory, string> = {
@@ -46,6 +47,8 @@ export function RulesView(props: {
   onCreateRule: (input: RuleInput) => Promise<Rule>;
   onUpdateRule: (id: string, input: Partial<RuleInput>) => Promise<Rule>;
   onDeleteRule: (id: string) => Promise<void>;
+  createSeed?: RuleCreateSeed | null;
+  createSeedKey?: number;
 }) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [localRules, setLocalRules] = useState(props.rules);
@@ -68,6 +71,14 @@ export function RulesView(props: {
     const timer = window.setTimeout(() => setFeedback(null), 1800);
     return () => window.clearTimeout(timer);
   }, [feedback]);
+
+  useEffect(() => {
+    if (!props.createSeed || props.createSeedKey === undefined) {
+      return;
+    }
+
+    setIsCreateOpen(true);
+  }, [props.createSeed, props.createSeedKey]);
 
   const filteredRules = useMemo(() => {
     const searchValue = search.trim().toLowerCase();
@@ -220,6 +231,8 @@ export function RulesView(props: {
 
       {isCreateOpen ? (
         <RuleCreateModal
+          initialDraft={props.createSeed?.initialDraft}
+          initialKind={props.createSeed?.kind}
           locale={locale}
           onClose={() => setIsCreateOpen(false)}
           onCreate={handleCreateRule}

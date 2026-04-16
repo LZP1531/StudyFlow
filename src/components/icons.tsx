@@ -234,6 +234,21 @@ export function DashboardHistoryIcon() {
   );
 }
 
+export function RuleSparkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="ui-icon" aria-hidden="true">
+      <path
+        d="M6.2 7.4h8.1a1.8 1.8 0 0 1 1.8 1.8v5.7a1.8 1.8 0 0 1-1.8 1.8H8.6l-2.4 2V9.2a1.8 1.8 0 0 1 1.8-1.8Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path d="M10.9 10.2v3.8M9 12.1h3.8M18.1 5.3v2.6M16.8 6.6h2.6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function navIcon(view: ViewKey) {
   switch (view) {
     case "dashboard":

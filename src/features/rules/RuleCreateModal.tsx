@@ -174,27 +174,44 @@ function categoryLabel(category: StudyCategory, locale: Locale) {
   return locale === "zh" ? zh[category] : en[category];
 }
 
+function mergeRuleDraft(base: RuleInput, input?: Partial<RuleInput>) {
+  if (!input) {
+    return base;
+  }
+
+  return {
+    ...base,
+    ...input,
+  };
+}
+
 export function RuleCreateModal(props: {
   locale: Locale;
   text: Messages;
   onClose: () => void;
   onCreate: (input: RuleInput) => Promise<void>;
+  initialKind?: RuleObjectKind;
+  initialDraft?: Partial<RuleInput>;
 }) {
   const presets = useMemo(() => buildRulePresetCatalog(props.locale), [props.locale]);
   const copy = useMemo(() => modalCopy(props.locale), [props.locale]);
-  const [kind, setKind] = useState<RuleObjectKind>("app");
-  const [draft, setDraft] = useState<RuleInput>(() => defaultRuleInputForKind("app", props.locale));
+  const initialKind = props.initialKind ?? "app";
+  const [kind, setKind] = useState<RuleObjectKind>(initialKind);
+  const [draft, setDraft] = useState<RuleInput>(() =>
+    mergeRuleDraft(defaultRuleInputForKind(initialKind, props.locale), props.initialDraft),
+  );
   const [selectedCategoryKey, setSelectedCategoryKey] = useState<RulePresetCategoryKey>(
     presets[0]?.key ?? "app_coding",
   );
   const [selectedPresetLabel, setSelectedPresetLabel] = useState<string | null>(null);
 
   useEffect(() => {
-    setKind("app");
-    setDraft(defaultRuleInputForKind("app", props.locale));
+    const nextKind = props.initialKind ?? "app";
+    setKind(nextKind);
+    setDraft(mergeRuleDraft(defaultRuleInputForKind(nextKind, props.locale), props.initialDraft));
     setSelectedCategoryKey(presets[0]?.key ?? "app_coding");
     setSelectedPresetLabel(null);
-  }, [presets, props.locale]);
+  }, [presets, props.initialDraft, props.initialKind, props.locale]);
 
   const selectedCategory = presets.find((category) => category.key === selectedCategoryKey) ?? presets[0];
 

@@ -19,6 +19,8 @@
 .timeline-range-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:.8rem}
 .timeline-inline-controls-left{justify-content:flex-start}
 .timeline-inline-controls-right{justify-content:flex-end}
+.timeline-sort-toggle{display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:.46rem .88rem;border:1px solid color-mix(in srgb,var(--panel-border) 78%,transparent);border-radius:999px;background:color-mix(in srgb,var(--soft-fill) 84%,transparent);box-shadow:inset 0 1px color-mix(in srgb,white 36%,transparent);color:var(--text-primary);font-weight:600;white-space:nowrap;cursor:pointer;transition:border-color .16s ease,background .16s ease,color .16s ease}
+.timeline-sort-toggle:hover{border-color:color-mix(in srgb,var(--accent) 24%,transparent);background:color-mix(in srgb,var(--accent-soft) 92%,transparent);color:var(--accent)}
 .timeline-toolbar .segmented-control{display:inline-flex;padding:.18rem;border:1px solid color-mix(in srgb,var(--panel-border) 78%,transparent);border-radius:999px;background:color-mix(in srgb,var(--soft-fill) 84%,transparent);box-shadow:inset 0 1px color-mix(in srgb,white 36%,transparent);flex-shrink:0}
 .timeline-toolbar .segmented-option{border:1px solid transparent;box-shadow:none;min-width:0;padding:.46rem .76rem;white-space:nowrap}
 .timeline-toolbar .segmented-option.active{border-color:color-mix(in srgb,var(--accent) 24%,transparent);background:color-mix(in srgb,var(--accent-soft) 92%,transparent);box-shadow:inset 0 1px color-mix(in srgb,white 46%,transparent)}
@@ -26,7 +28,7 @@
 .timeline-count-tag{white-space:nowrap}
 .timeline-scroll-area{min-height:0;overflow-y:auto;overflow-x:hidden;padding-top:.34rem;scrollbar-width:none;-ms-overflow-style:none}
 .timeline-scroll-area::-webkit-scrollbar,.timeline-detail-grid::-webkit-scrollbar{display:none}
-.timeline-record-list{display:grid;min-height:100%}
+.timeline-record-list{display:grid;align-content:start;grid-auto-rows:max-content;min-height:100%}
 .timeline-record-row{display:grid;grid-template-columns:148px 76px minmax(170px,.82fr) minmax(220px,.86fr) 190px 164px;align-items:center;gap:.9rem;padding:.82rem 0;border-bottom:1px solid color-mix(in srgb,var(--panel-border) 74%,transparent)}
 .timeline-record-row:last-child{border-bottom:none}
 .timeline-record-time{display:grid;gap:.22rem;padding-left:.3rem}

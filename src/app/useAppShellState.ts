@@ -20,6 +20,11 @@ const refreshIntervals = {
   summaryRefreshMs: 20_000,
 } as const;
 
+export interface RuleCreateSeed {
+  kind: "app" | "site";
+  initialDraft: Partial<RuleInput>;
+}
+
 export function useAppShellState() {
   const [activeView, setActiveView] = useState<ViewKey>("dashboard");
   const [currentTimeMs, setCurrentTimeMs] = useState(() => Date.now());
@@ -37,6 +42,8 @@ export function useAppShellState() {
   const [config, setConfig] = useState<TrackingConfig | null>(null);
   const [settingsMeta, setSettingsMeta] = useState<SettingsMeta | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [ruleCreateSeed, setRuleCreateSeed] = useState<RuleCreateSeed | null>(null);
+  const [ruleCreateSeedKey, setRuleCreateSeedKey] = useState(0);
   const text = useMemo(() => messages[locale], [locale]);
 
   async function refreshSnapshot() {
@@ -341,6 +348,34 @@ export function useAppShellState() {
     await refreshSummary(activeView);
   }
 
+  function handleQuickCreateRuleFromSnapshot() {
+    if (!snapshot) {
+      return;
+    }
+
+    const isBrowser = snapshot.sourceType === "browser";
+    const sourceName = snapshot.currentSource === "Idle" ? snapshot.currentApp : snapshot.currentSource;
+    const normalizedSourceName = sourceName.trim();
+    const normalizedAppName = snapshot.currentApp.trim();
+    const safeName = normalizedSourceName || normalizedAppName || (locale === "zh" ? "新规则" : "New rule");
+
+    setRuleCreateSeed({
+      kind: isBrowser ? "site" : "app",
+      initialDraft: isBrowser
+        ? {
+            name: locale === "zh" ? `${safeName} 规则` : `${safeName} rule`,
+            sourceLabel: normalizedSourceName || normalizedAppName,
+          }
+        : {
+            name: locale === "zh" ? `${normalizedAppName || safeName} 规则` : `${normalizedAppName || safeName} rule`,
+            pattern: normalizedAppName,
+            sourceLabel: normalizedSourceName || normalizedAppName,
+          },
+    });
+    setRuleCreateSeedKey((current) => current + 1);
+    setActiveView("rules");
+  }
+
   return {
     activeView,
     config,
@@ -358,6 +393,8 @@ export function useAppShellState() {
     themeMode,
     weekly,
     errorMessage,
+    ruleCreateSeed,
+    ruleCreateSeedKey,
     actions: {
       closeWindow: () => void trackerBridge.closeWindow(),
       createRule: handleCreateRule,
@@ -365,6 +402,7 @@ export function useAppShellState() {
       deleteStudySession: handleDeleteStudySession,
       maximizeWindow: handleToggleMaximize,
       minimizeWindow: () => void trackerBridge.minimizeWindow(),
+      quickCreateRuleFromSnapshot: handleQuickCreateRuleFromSnapshot,
       setActiveView,
       setLocale,
       setThemeMode,

@@ -34,7 +34,7 @@ const defaultTrackingConfig: TrackingConfig = {
   themeMode: "dark",
   locale: "zh",
   dashboardTimerStyle: "dial",
-  idleThresholdMinutes: 4,
+  idleThresholdMinutes: 5,
   launchOnStartup: true,
   minimizeToTray: true,
   allowLocalExports: true,

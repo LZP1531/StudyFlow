@@ -19,6 +19,8 @@ export default function AppShell() {
     events,
     isMaximized,
     locale,
+    ruleCreateSeed,
+    ruleCreateSeedKey,
     rules,
     sessions,
     settingsMeta,
@@ -81,6 +83,7 @@ export default function AppShell() {
                   dailySummary={daily}
                   locale={locale}
                   onOpenTimeline={() => actions.setActiveView("timeline")}
+                  onQuickCreateRule={actions.quickCreateRuleFromSnapshot}
                   sessions={sessions}
                   snapshot={snapshot}
                   sourceBreakdown={sources}
@@ -90,7 +93,18 @@ export default function AppShell() {
                 />
               ) : null}
               {activeView === "timeline" ? <TimelineView events={events} locale={locale} onDeleteStudySession={actions.deleteStudySession} sessions={sessions} text={text} /> : null}
-              {activeView === "rules" ? <RulesView locale={locale} onCreateRule={actions.createRule} onDeleteRule={actions.deleteRule} onUpdateRule={actions.updateRule} rules={rules} text={text} /> : null}
+              {activeView === "rules" ? (
+                <RulesView
+                  createSeed={ruleCreateSeed}
+                  createSeedKey={ruleCreateSeedKey}
+                  locale={locale}
+                  onCreateRule={actions.createRule}
+                  onDeleteRule={actions.deleteRule}
+                  onUpdateRule={actions.updateRule}
+                  rules={rules}
+                  text={text}
+                />
+              ) : null}
               {activeView === "settings" ? (
                 <SettingsView
                   config={config}

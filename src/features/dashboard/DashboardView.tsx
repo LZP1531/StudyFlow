@@ -3,7 +3,7 @@ import type { Messages } from "../../i18n/messages";
 import type { Locale } from "../../types/app";
 import { formatMinutes, formatTimeRange, formatWeekday } from "../../lib/formatters";
 import type { DailySummary, SourceBreakdown, StudySession, TrackingConfig, TrackingSnapshot } from "../../types/study";
-import { AppIcon, DashboardBreakIcon, DashboardClockIcon, DashboardHistoryIcon, DashboardPulseIcon, GlobeIcon, SystemIcon } from "../../components/icons";
+import { AppIcon, DashboardBreakIcon, DashboardClockIcon, DashboardHistoryIcon, DashboardPulseIcon, GlobeIcon, RuleSparkIcon, SystemIcon } from "../../components/icons";
 import { categoryLabel } from "../shared/viewLabels";
 import {
   buildRecentSevenDays,
@@ -124,8 +124,9 @@ export function DashboardView(props: {
   timerStyle: TrackingConfig["dashboardTimerStyle"];
   text: Messages;
   onOpenTimeline: () => void;
+  onQuickCreateRule: () => void;
 }) {
-  const { dailySummary, weeklySummary, sourceBreakdown, snapshot, sessions, locale, currentTimeMs, timerStyle, text, onOpenTimeline } = props;
+  const { dailySummary, weeklySummary, sourceBreakdown, snapshot, sessions, locale, currentTimeMs, timerStyle, text, onOpenTimeline, onQuickCreateRule } = props;
   const dashboardText = locale === "zh"
     ? {
         confidence: "可信度",
@@ -150,6 +151,17 @@ export function DashboardView(props: {
         recentEmpty: "No study records yet today.",
         topSource: "Top source",
         details: "Details",
+      };
+  const quickRuleText = locale === "zh"
+    ? {
+        badge: "ADD RULE LINK",
+        title: "创建规则草稿",
+        action: "DRAFT",
+      }
+    : {
+        badge: "ADD RULE LINK",
+        title: "Create rule draft",
+        action: "DRAFT",
       };
   const trendDays = useMemo(() => buildRecentSevenDays(weeklySummary, new Date(currentTimeMs)), [currentTimeMs, weeklySummary]);
   const weeklyTotal = trendDays.reduce((sum, day) => sum + day.totalStudyMinutes, 0);
@@ -196,6 +208,20 @@ export function DashboardView(props: {
               <span className="muted-tag">{dashboardSourceKindLabel(snapshotSourceKind, locale)}</span>
               <span className="muted-tag">{dashboardText.confidence}: {Math.round(snapshot.confidence * 100)}%</span>
             </div>
+
+            <button className="dashboard-rule-shortcut-card" onClick={onQuickCreateRule} type="button">
+              <span className="dashboard-rule-shortcut-icon" aria-hidden="true">
+                <RuleSparkIcon />
+              </span>
+              <span className="dashboard-rule-shortcut-copy">
+                <span className="dashboard-rule-shortcut-badge">{quickRuleText.badge}</span>
+                <strong>{quickRuleText.title}</strong>
+              </span>
+              <span className="dashboard-rule-shortcut-meta">
+                <span className="dashboard-rule-shortcut-pattern">{snapshot.currentApp}</span>
+                <span className="dashboard-rule-shortcut-action">{quickRuleText.action}</span>
+              </span>
+            </button>
           </section>
 
           <section className="dashboard-metric-grid">

@@ -52,6 +52,7 @@
 .dashboard-board-top{grid-template-columns:repeat(3,minmax(0,1fr));border-bottom:1px solid color-mix(in srgb,var(--panel-border) 74%,transparent);align-items:stretch;background:linear-gradient(180deg,color-mix(in srgb,var(--panel-bg) 98%,transparent),color-mix(in srgb,var(--soft-fill) 12%,var(--panel-bg)))}
 .dashboard-board-bottom{grid-template-columns:minmax(0,1.45fr) minmax(320px,.95fr)}
 .dashboard-live-panel{padding:.9rem 1.2rem .75rem;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto;align-content:start;gap:.32rem;background:transparent}
+.dashboard-live-panel{grid-template-rows:auto auto auto minmax(0,1fr)}
 .dashboard-live-row{display:flex;align-items:center;gap:.7rem;flex-wrap:wrap;grid-column:1 / -1;margin-bottom:0}
 .dashboard-live-dot{width:.75rem;height:.75rem;border-radius:999px;background:#94a3b875}
 .dashboard-live-dot.study{background:#3b82f6}
@@ -65,6 +66,20 @@
 .dashboard-live-source-row{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;grid-column:1;grid-row:3;align-self:start;justify-self:start;margin-top:0}
 .dashboard-live-source-pill{display:inline-flex;align-items:center;gap:.42rem;padding:.52rem .78rem;border-radius:.82rem;border:1px solid color-mix(in srgb,var(--panel-border) 78%,transparent);background:color-mix(in srgb,var(--shell-bg) 90%,transparent);color:var(--text-secondary);font-weight:600}
 .dashboard-live-source-pill .ui-icon{width:.95rem;height:.95rem}
+.dashboard-rule-shortcut-card{position:relative;isolation:isolate;align-self:center;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;column-gap:.82rem;row-gap:.12rem;width:100%;margin-top:.18rem;padding:.68rem .82rem;border:1px solid rgba(34,211,238,.2);border-radius:1rem;background:linear-gradient(135deg,rgba(2,6,23,.94),rgba(11,18,36,.9) 54%,rgba(8,47,73,.88));text-align:left;cursor:pointer;overflow:hidden;box-shadow:inset 0 1px rgba(255,255,255,.05),0 10px 24px rgba(2,6,23,.18);transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease}
+.dashboard-rule-shortcut-card:before{content:"";position:absolute;inset:-1px;background:linear-gradient(120deg,rgba(34,211,238,.12),transparent 32%,rgba(59,130,246,.08) 56%,transparent 74%),radial-gradient(circle at top right,rgba(34,211,238,.22),transparent 34%),radial-gradient(circle at bottom left,rgba(56,189,248,.14),transparent 42%);pointer-events:none;z-index:-2}
+.dashboard-rule-shortcut-card:after{content:"";position:absolute;top:0;bottom:0;left:-28%;width:42%;background:linear-gradient(90deg,transparent,rgba(125,211,252,.18),transparent);transform:skewX(-20deg);opacity:.72;pointer-events:none}
+.dashboard-rule-shortcut-card:hover{transform:translateY(-1px);border-color:rgba(34,211,238,.4);box-shadow:inset 0 1px rgba(255,255,255,.08),0 12px 30px rgba(8,47,73,.24),0 0 0 1px rgba(34,211,238,.08)}
+.dashboard-rule-shortcut-icon{grid-column:1;grid-row:1 / span 2;position:relative;display:grid;place-items:center;align-self:center;width:2.18rem;height:2.18rem;border-radius:50%;background:radial-gradient(circle,rgba(34,211,238,.26),rgba(15,23,42,.24) 62%,transparent 70%);color:#67e8f9;box-shadow:0 0 0 1px rgba(34,211,238,.16)}
+.dashboard-rule-shortcut-icon:before,.dashboard-rule-shortcut-icon:after{content:"";position:absolute;inset:-.16rem;border-radius:50%;border:1px solid rgba(34,211,238,.18)}
+.dashboard-rule-shortcut-icon:after{inset:-.34rem;border-color:rgba(59,130,246,.12)}
+.dashboard-rule-shortcut-icon .ui-icon{width:1rem;height:1rem;filter:drop-shadow(0 0 8px rgba(103,232,249,.4))}
+.dashboard-rule-shortcut-copy,.dashboard-rule-shortcut-meta{display:contents}
+.dashboard-rule-shortcut-badge{grid-column:2;grid-row:1;display:inline-flex;align-items:center;justify-self:start;padding:.15rem .42rem;border-radius:999px;border:1px solid rgba(34,211,238,.16);background:rgba(8,47,73,.28);color:#67e8f9;font-size:.58rem;font-weight:800;letter-spacing:.18em}
+.dashboard-rule-shortcut-copy strong{grid-column:2;grid-row:2;display:block;color:#e0f2fe;font-size:.93rem;line-height:1.14;letter-spacing:.01em}
+.dashboard-rule-shortcut-pattern,.dashboard-rule-shortcut-action{display:inline-flex;align-items:center}
+.dashboard-rule-shortcut-pattern{grid-column:3;grid-row:1;justify-self:end;min-width:0;max-width:100%;min-height:1.66rem;padding:.24rem .56rem;border-radius:999px;background:linear-gradient(180deg,rgba(14,116,144,.24),rgba(15,23,42,.42));border:1px solid rgba(103,232,249,.16);color:#f8fafc;font-weight:600;box-shadow:inset 0 1px rgba(255,255,255,.04);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dashboard-rule-shortcut-action{grid-column:3;grid-row:2;justify-self:end;align-self:end;color:#67e8f9;font-weight:800;letter-spacing:.14em;padding:0 .18rem 0 0}
 .dashboard-live-timer-wrap{display:grid;place-items:center;width:100%;min-height:clamp(182px,19vw,244px);gap:0;align-self:center;justify-self:center;margin-top:0}
 .dashboard-live-stopwatch{position:relative;width:clamp(182px,19vw,244px);aspect-ratio:1}
 .dashboard-live-timer-wrap-dial{transform:translate(0)}
