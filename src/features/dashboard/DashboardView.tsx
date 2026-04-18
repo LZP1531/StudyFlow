@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+﻿import { useMemo } from "react";
 import type { Messages } from "../../i18n/messages";
 import type { Locale } from "../../types/app";
 import { formatCompactMinutes, formatDateTimeRange, formatMinutes, formatWeekday } from "../../lib/formatters";
@@ -133,7 +133,7 @@ export function DashboardView(props: {
         confidence: "可信度",
         weeklyTrendTitle: "最近 7 天学习趋势",
         weeklyTrendTotal: "7 天累计",
-        sourcesTitle: "今日来源分布",
+        sourcesTitle: "今日学习来源分布",
         sourcesEmpty: "今天还没有可展示的学习来源。",
         recentTitle: "最近记录",
         recentAction: "查看全部",
@@ -145,7 +145,7 @@ export function DashboardView(props: {
         confidence: "Confidence",
         weeklyTrendTitle: "Last 7 days",
         weeklyTrendTotal: "7-day total",
-        sourcesTitle: "Today's source mix",
+        sourcesTitle: "Today's study source mix",
         sourcesEmpty: "No study sources available for today.",
         recentTitle: "Recent logs",
         recentAction: "View all",
@@ -153,7 +153,7 @@ export function DashboardView(props: {
         topSource: "Top source",
         details: "Details",
       };
-  const quickRuleText = locale === "zh"
+  const quickRuleText = locale === "zh" 
     ? {
         badge: "ADD RULE LINK",
         title: "创建规则草稿",
@@ -356,3 +356,6 @@ export function DashboardView(props: {
     </div>
   );
 }
+
+
+

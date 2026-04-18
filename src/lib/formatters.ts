@@ -1,11 +1,11 @@
-import type { Locale } from "../types/app";
+﻿import type { Locale } from "../types/app";
 
 export function formatMinutes(minutes: number, locale: Locale) {
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
 
   if (locale === "zh") {
-    return hours === 0 ? `${rest} 分钟` : `${hours} 小时 ${rest.toString().padStart(2, "0")} 分`;
+    return hours === 0 ? `${rest} 分钟` : `${hours} 小时 ${rest.toString().padStart(2, "0")} 分钟`;
   }
 
   return hours === 0 ? `${rest} min` : `${hours}h ${rest.toString().padStart(2, "0")}m`;

@@ -183,12 +183,12 @@ export class StudyflowDatabase {
   }
 
   listSourceBreakdown(): SourceBreakdown[] {
-    const referenceDate = this.getReferenceDate();
+    const referenceDate = this.getLatestStudySessionDate() ?? this.getReferenceDate();
     if (!referenceDate) {
       return [];
     }
-    const summary = this.buildDailyActivityBuckets().get(referenceDate);
-    const sourceRows = [...(summary?.topSourceSeconds.entries() ?? [])]
+
+    const sourceRows = [...this.buildStudySessionSourceBreakdown(referenceDate).entries()]
       .map(([sourceLabel, durationSeconds]) => ({ sourceLabel, durationSeconds }))
       .sort((left, right) => right.durationSeconds - left.durationSeconds);
 
@@ -930,6 +930,50 @@ export class StudyflowDatabase {
     }
 
     return counts;
+  }
+
+  private getLatestStudySessionDate() {
+    const row = this.db
+      .prepare(`select started_at from study_sessions order by started_at desc limit 1`)
+      .get() as { started_at: string } | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    const startedAt = new Date(row.started_at);
+    if (Number.isNaN(startedAt.getTime())) {
+      return null;
+    }
+
+    return this.formatLocalDateKey(startedAt);
+  }
+
+  private buildStudySessionSourceBreakdown(referenceDate: string) {
+    const totals = new Map<string, number>();
+    const rows = this.db
+      .prepare(`select started_at, duration_seconds, source_label from study_sessions`)
+      .all() as Array<{ started_at: string; duration_seconds: number; source_label: string }>;
+
+    for (const row of rows) {
+      if (row.duration_seconds > maxSummaryEventDurationSeconds) {
+        continue;
+      }
+
+      const startedAt = new Date(row.started_at);
+      if (Number.isNaN(startedAt.getTime())) {
+        continue;
+      }
+
+      const dateKey = this.formatLocalDateKey(startedAt);
+      if (dateKey !== referenceDate) {
+        continue;
+      }
+
+      totals.set(row.source_label, (totals.get(row.source_label) ?? 0) + row.duration_seconds);
+    }
+
+    return totals;
   }
 
   private getTopSourceLabel(summary: DailyAggregateBucket | undefined) {

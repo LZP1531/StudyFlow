@@ -1,4 +1,4 @@
-import type { Messages } from "../../i18n/messages";
+﻿import type { Messages } from "../../i18n/messages";
 import type { Locale } from "../../types/app";
 import type { DailySummary, StudySession, TrackingSnapshot } from "../../types/study";
 import { classificationLabel } from "../shared/viewLabels";
