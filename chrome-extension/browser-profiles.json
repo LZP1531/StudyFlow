@@ -18,9 +18,38 @@
     "appAliases": ["Brave", "brave.exe"]
   },
   {
+    "id": "firefox",
+    "displayName": "Mozilla Firefox",
+    "extensionName": "StudyFlow Companion (Firefox)",
+    "appAliases": ["Mozilla Firefox", "firefox.exe", "Firefox"],
+    "browserSpecificSettings": {
+      "gecko": {
+        "id": "studyflow-companion@studyflow.local"
+      }
+    }
+  },
+  {
+    "id": "opera",
+    "displayName": "Opera",
+    "extensionName": "StudyFlow Companion (Opera)",
+    "appAliases": ["Opera", "opera.exe", "Opera GX", "opera_gx.exe"]
+  },
+  {
+    "id": "vivaldi",
+    "displayName": "Vivaldi",
+    "extensionName": "StudyFlow Companion (Vivaldi)",
+    "appAliases": ["Vivaldi", "vivaldi.exe"]
+  },
+  {
+    "id": "arc",
+    "displayName": "Arc",
+    "extensionName": "StudyFlow Companion (Arc)",
+    "appAliases": ["Arc", "arc.exe"]
+  },
+  {
     "id": "lenovo",
     "displayName": "Lenovo Browser",
     "extensionName": "StudyFlow Companion (Lenovo)",
-    "appAliases": ["Lenovo Browser", "LenovoBrowser.exe", "LenovoBrowser", "SLBrowser.exe"]
+    "appAliases": ["Lenovo Browser", "LenovoBrowser.exe", "LenovoBrowser", "SLBrowser.exe", "SLBrowser", "Lenovo Browser 32-bit", "Lenovo Browser 64-bit"]
   }
 ]

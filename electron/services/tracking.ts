@@ -33,14 +33,31 @@ function normalizeWindowText(value: string) {
 }
 
 function normalizeBrowserToken(value: string | null | undefined) {
-  return (value ?? "").trim().toLowerCase();
+  return (value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .replace(/[()\-_.]/g, "");
+}
+
+function browserIdentityMatches(left: string | null | undefined, right: string | null | undefined) {
+  const normalizedLeft = normalizeBrowserToken(left);
+  const normalizedRight = normalizeBrowserToken(right);
+
+  if (!normalizedLeft || !normalizedRight) {
+    return false;
+  }
+
+  return (
+    normalizedLeft === normalizedRight ||
+    normalizedLeft.includes(normalizedRight) ||
+    normalizedRight.includes(normalizedLeft)
+  );
 }
 
 function detectBrowserProfile(appName: string) {
-  const normalizedAppName = normalizeBrowserToken(appName);
-
   return browserProfiles.find((profile) =>
-    profile.appAliases.some((alias) => normalizeBrowserToken(alias) === normalizedAppName),
+    profile.appAliases.some((alias) => browserIdentityMatches(alias, appName)),
   ) ?? null;
 }
 
@@ -49,11 +66,10 @@ function matchesReportedBrowser(profile: BrowserProfile, browserActivity: Browse
   const normalizedReportedName = normalizeBrowserToken(browserActivity.browserName);
 
   return (
-    normalizedReportedId === normalizeBrowserToken(profile.id) ||
-    normalizedReportedName === normalizeBrowserToken(profile.displayName) ||
+    browserIdentityMatches(normalizedReportedId, profile.id) ||
+    browserIdentityMatches(normalizedReportedName, profile.displayName) ||
     profile.appAliases.some((alias) => {
-      const normalizedAlias = normalizeBrowserToken(alias);
-      return normalizedAlias === normalizedReportedId || normalizedAlias === normalizedReportedName;
+      return browserIdentityMatches(alias, normalizedReportedId) || browserIdentityMatches(alias, normalizedReportedName);
     })
   );
 }

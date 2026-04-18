@@ -7,6 +7,10 @@ This folder contains the source templates and browser profiles for StudyFlow's l
 - Google Chrome
 - Microsoft Edge
 - Brave
+- Mozilla Firefox
+- Opera
+- Vivaldi
+- Arc
 - Lenovo Browser
 
 ## Build unpacked extensions
@@ -22,6 +26,10 @@ Generated unpacked extension folders will be written to:
 - `chrome-extension/dist/chrome`
 - `chrome-extension/dist/edge`
 - `chrome-extension/dist/brave`
+- `chrome-extension/dist/firefox`
+- `chrome-extension/dist/opera`
+- `chrome-extension/dist/vivaldi`
+- `chrome-extension/dist/arc`
 - `chrome-extension/dist/lenovo`
 
 Then load the matching folder in the browser's extension developer mode.

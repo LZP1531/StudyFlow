@@ -2,7 +2,16 @@ const BROWSER_ID = "__BROWSER_ID__";
 const BROWSER_NAME = "__BROWSER_NAME__";
 
 function inferPageType(url) {
-  if (url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("brave://")) {
+  if (
+    url.startsWith("chrome://") ||
+    url.startsWith("edge://") ||
+    url.startsWith("brave://") ||
+    url.startsWith("lenovo://") ||
+    url.startsWith("firefox://") ||
+    url.startsWith("opera://") ||
+    url.startsWith("vivaldi://") ||
+    url.startsWith("arc://")
+  ) {
     return "browser_internal";
   }
 
