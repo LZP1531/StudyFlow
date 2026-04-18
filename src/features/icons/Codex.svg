@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="codexGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#9C83FF" />
+      <stop offset="100%" stop-color="#3A47ED" />
+    </linearGradient>
+  </defs>
+
+  <path d="M 80 50
+           a 35 35 0 0 1 55 -5
+           a 35 35 0 0 1 45 25
+           a 35 35 0 0 1 -5 55
+           a 35 35 0 0 1 -40 30
+           a 35 35 0 0 1 -55 5
+           a 35 35 0 0 1 -45 -25
+           a 35 35 0 0 1 5 -55
+           a 35 35 0 0 1 40 -30 Z" 
+        fill="url(#codexGradient)" />
+
+  <g stroke="#FFFFFF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <polyline points="75,80 95,100 75,120" />
+    <line x1="110" y1="120" x2="140" y2="120" />
+  </g>
+</svg>

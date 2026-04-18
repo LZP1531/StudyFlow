@@ -8,6 +8,7 @@
     "dev": "concurrently -k \"npm:dev:renderer\" \"npm:dev:main\" \"npm:dev:electron\"",
     "dev:renderer": "vite",
     "dev:main": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
+    "build:extensions": "node scripts/build-browser-extensions.cjs",
     "prepare:electron-runtime": "node scripts/write-electron-package.cjs",
     "dev:electron": "npm run prepare:electron-runtime && wait-on tcp:5173 dist-electron/electron/main.js && electron .",
     "build": "tsc -b && tsc -p tsconfig.electron.json && npm run prepare:electron-runtime && vite build",

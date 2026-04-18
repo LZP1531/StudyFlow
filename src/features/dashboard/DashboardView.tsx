@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import type { Messages } from "../../i18n/messages";
 import type { Locale } from "../../types/app";
-import { formatMinutes, formatTimeRange, formatWeekday } from "../../lib/formatters";
+import { formatCompactMinutes, formatDateTimeRange, formatMinutes, formatWeekday } from "../../lib/formatters";
 import type { DailySummary, SourceBreakdown, StudySession, TrackingConfig, TrackingSnapshot } from "../../types/study";
-import { AppIcon, DashboardBreakIcon, DashboardClockIcon, DashboardHistoryIcon, DashboardPulseIcon, GlobeIcon, RuleSparkIcon, SystemIcon } from "../../components/icons";
+import { DashboardBreakIcon, DashboardClockIcon, DashboardHistoryIcon, DashboardPulseIcon, RuleSparkIcon, SystemIcon } from "../../components/icons";
+import { SourceIdentityIcon } from "../shared/SourceIdentityIcon";
 import { categoryLabel } from "../shared/viewLabels";
 import {
   buildRecentSevenDays,
@@ -255,7 +256,7 @@ export function DashboardView(props: {
               <div className="week-chart dashboard-week-chart">
                 {trendDays.map((day) => (
                   <div className="week-column" key={day.date}>
-                    <span className="week-hours">{Math.max(0, Math.round(day.totalStudyMinutes / 60))}h</span>
+                    <span className="week-hours">{formatCompactMinutes(day.totalStudyMinutes, locale)}</span>
                     <div className="week-track">
                       <div
                         className={`week-fill ${day.date === bestDay.date ? "is-best" : ""}`.trim()}
@@ -283,7 +284,16 @@ export function DashboardView(props: {
                 ) : (
                   recentSessions.map((session) => (
                     <article className="dashboard-recent-row" key={session.id}>
-                      <div className="dashboard-recent-time"><strong>{formatTimeRange(session.startedAt, session.endedAt, locale)}</strong></div>
+                      <div className={`dashboard-recent-icon ${dashboardSessionSourceKind(session)}`}>
+                        <SourceIdentityIcon
+                          appName={session.primaryAppName}
+                          className="dashboard-recent-identity"
+                          domain={session.primaryDomain}
+                          sourceKind={dashboardSessionSourceKind(session)}
+                          sourceLabel={session.sourceLabel}
+                        />
+                      </div>
+                      <div className="dashboard-recent-time"><strong>{formatDateTimeRange(session.startedAt, session.endedAt, locale)}</strong></div>
                       <div className="dashboard-recent-main">
                         <strong>{session.sourceLabel}</strong>
                         <p>{dashboardSessionSecondaryText(session, locale)}</p>
@@ -313,7 +323,15 @@ export function DashboardView(props: {
                     <article className="dashboard-source-row" key={source.sourceLabel}>
                       <div className="dashboard-source-topline">
                         <div className="dashboard-source-meta">
-                          <div className={`dashboard-source-icon ${source.kind}`}>{source.kind === "site" ? <GlobeIcon /> : <AppIcon />}</div>
+                          <div className={`dashboard-source-icon ${source.kind}`}>
+                            <SourceIdentityIcon
+                              appName={source.session?.primaryAppName}
+                              className="dashboard-source-identity"
+                              domain={source.session?.primaryDomain}
+                              sourceKind={source.kind}
+                              sourceLabel={source.sourceLabel}
+                            />
+                          </div>
                           <div>
                             <strong>{source.sourceLabel}</strong>
                             <p>{source.session ? source.session.primaryDomain ?? source.session.primaryAppName ?? dashboardSourceKindLabel(source.kind, locale) : dashboardSourceKindLabel(source.kind, locale)}</p>

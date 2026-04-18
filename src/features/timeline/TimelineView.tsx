@@ -1,11 +1,12 @@
 ﻿import { useEffect, useMemo, useRef, useState } from "react";
 import type { Messages } from "../../i18n/messages";
 import type { Locale } from "../../types/app";
-import { formatDurationSeconds, formatTimeRange } from "../../lib/formatters";
+import { formatDurationSeconds } from "../../lib/formatters";
 import type { ActivityEvent, StudySession } from "../../types/study";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
-import { AppIcon, DatabaseIcon, GlobeIcon, SearchIcon, TimelineIcon } from "../../components/icons";
+import { SearchIcon, TimelineIcon } from "../../components/icons";
 import { SegmentedButtonGroup } from "../../components/SegmentedButtonGroup";
+import { SourceIdentityIcon } from "../shared/SourceIdentityIcon";
 import { categoryLabel, classificationLabel } from "../shared/viewLabels";
 import { TimelineDetailModal } from "./TimelineDetailModal";
 import {
@@ -16,6 +17,7 @@ import {
   TimelineIconKind,
   TimelineSourceFilter,
   TimelineViewMode,
+  formatTimelineRecordRange,
   timelineIconKindForEvent,
   timelineIconKindForSession,
 } from "./timeline.helpers";
@@ -23,10 +25,25 @@ import {
 type TimelineRangePreset = "today" | "last7days" | "last30days" | "all";
 type TimelineSortOrder = "desc" | "asc";
 
-function TimelineRecordIcon(props: { kind: TimelineIconKind }) {
+function TimelineRecordIcon(props: {
+  kind: TimelineIconKind;
+  sourceLabel?: string | null;
+  appName?: string | null;
+  domain?: string | null;
+  browserName?: string | null;
+  url?: string | null;
+}) {
   return (
     <div className={`timeline-record-icon ${props.kind}`}>
-      {props.kind === "site" ? <GlobeIcon /> : props.kind === "system" ? <DatabaseIcon /> : <AppIcon />}
+      <SourceIdentityIcon
+        appName={props.appName}
+        browserName={props.browserName}
+        className="timeline-source-identity"
+        domain={props.domain}
+        sourceKind={props.kind === "system" ? "system" : props.kind === "site" ? "site" : "app"}
+        sourceLabel={props.sourceLabel}
+        url={props.url}
+      />
     </div>
   );
 }
@@ -420,10 +437,10 @@ export function TimelineView(props: {
               ? visibleSessions.map((session) => (
                   <article key={session.id} className="timeline-record-row">
                     <div className="timeline-record-time">
-                      <strong>{formatTimeRange(session.startedAt, session.endedAt, locale)}</strong>
+                      <strong>{formatTimelineRecordRange(session.startedAt, session.endedAt, locale)}</strong>
                       <span>{formatDurationSeconds(session.durationSeconds, locale)}</span>
                     </div>
-                    <div className="timeline-record-icon-column"><TimelineRecordIcon kind={timelineIconKindForSession(session)} /></div>
+                    <div className="timeline-record-icon-column"><TimelineRecordIcon kind={timelineIconKindForSession(session)} sourceLabel={session.sourceLabel} appName={session.primaryAppName} domain={session.primaryDomain} /></div>
                     <div className="timeline-record-label"><strong>{session.sourceLabel}</strong></div>
                     <div className="timeline-record-app">
                       <span>
@@ -444,10 +461,10 @@ export function TimelineView(props: {
               : visibleEvents.map((event) => (
                   <article key={event.id} className="timeline-record-row">
                     <div className="timeline-record-time">
-                      <strong>{formatTimeRange(event.startedAt, event.endedAt, locale)}</strong>
+                      <strong>{formatTimelineRecordRange(event.startedAt, event.endedAt, locale)}</strong>
                       <span>{formatDurationSeconds(event.durationSeconds, locale)}</span>
                     </div>
-                    <div className="timeline-record-icon-column"><TimelineRecordIcon kind={timelineIconKindForEvent(event)} /></div>
+                    <div className="timeline-record-icon-column"><TimelineRecordIcon kind={timelineIconKindForEvent(event)} sourceLabel={event.sourceLabel} appName={event.appName} domain={event.domain} browserName={event.browserName} url={event.url} /></div>
                     <div className="timeline-record-label"><strong>{event.sourceLabel}</strong></div>
                     <div className="timeline-record-app"><span>{event.sourceType === "browser" ? `${event.browserName ?? event.appName}${event.domain ? ` · ${event.domain}` : ""}` : event.appName}</span></div>
                     <div className="timeline-record-tags">

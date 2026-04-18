@@ -174,6 +174,32 @@ function categoryLabel(category: StudyCategory, locale: Locale) {
   return locale === "zh" ? zh[category] : en[category];
 }
 
+function categoryIconKey(category: StudyCategory) {
+  const map: Record<StudyCategory, string> = {
+    flashcard: "language",
+    note: "notes",
+    reading: "docs",
+    course: "course",
+    video_course: "course",
+    coding: "coding",
+    general: "docs",
+  };
+  return map[category];
+}
+
+function categoryVisualClass(category: StudyCategory) {
+  const map: Record<StudyCategory, string> = {
+    flashcard: "flashcard",
+    note: "note",
+    reading: "reading",
+    course: "course",
+    video_course: "video-course",
+    coding: "coding",
+    general: "general",
+  };
+  return map[category];
+}
+
 function mergeRuleDraft(base: RuleInput, input?: Partial<RuleInput>) {
   if (!input) {
     return base;
@@ -224,6 +250,8 @@ export function RuleCreateModal(props: {
     { value: "coding", label: categoryLabel("coding", props.locale) },
     { value: "general", label: categoryLabel("general", props.locale) },
   ];
+
+  const selectedCategoryOption = categoryOptions.find((option) => option.value === draft.category) ?? categoryOptions[0];
 
   function handleKindChange(nextKind: RuleObjectKind) {
     setKind(nextKind);
@@ -388,6 +416,15 @@ export function RuleCreateModal(props: {
                   <label className="rule-field">
                     <span>{copy.studyCategory}</span>
                     <DropdownSelect
+                      menuClassName="rule-category-menu"
+                      placement="up"
+                      renderOption={(option, selected) => (
+                        <span className={`rule-category-option ${categoryVisualClass(option.value)} ${selected ? "selected" : ""}`.trim()}>{option.label}</span>
+                      )}
+                      renderValue={(option) => (
+                        <span className={`rule-category-value ${categoryVisualClass(option.value)}`.trim()}>{option.label}</span>
+                      )}
+                      triggerClassName={`rule-category-trigger ${selectedCategoryOption ? categoryVisualClass(selectedCategoryOption.value) : ""}`.trim()}
                       value={draft.category}
                       options={categoryOptions}
                       onChange={(next) => setDraft((current) => ({ ...current, category: next }))}

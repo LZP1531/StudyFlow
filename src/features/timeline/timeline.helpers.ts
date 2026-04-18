@@ -66,3 +66,55 @@ export function formatTimelineDateTime(value: string, locale: Locale) {
     hour12: false,
   }).format(new Date(value));
 }
+
+function startOfDay(date: Date) {
+  const next = new Date(date);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function dayOffset(target: Date, base: Date) {
+  const targetStart = startOfDay(target).getTime();
+  const baseStart = startOfDay(base).getTime();
+  return Math.round((targetStart - baseStart) / 86_400_000);
+}
+
+function timelineDatePrefix(value: Date, locale: Locale, now: Date) {
+  const offset = dayOffset(value, now);
+  if (offset === 0) {
+    return locale === "zh" ? "今天" : "Today";
+  }
+  if (offset === -1) {
+    return locale === "zh" ? "昨天" : "Yesterday";
+  }
+
+  return new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+    month: "2-digit",
+    day: "2-digit",
+  }).format(value);
+}
+
+export function formatTimelineRecordRange(startedAt: string, endedAt: string | null, locale: Locale, now = new Date()) {
+  const startDate = new Date(startedAt);
+  const endDate = endedAt ? new Date(endedAt) : null;
+  const timeFormatter = new Intl.DateTimeFormat(locale === "zh" ? "zh-CN" : "en-US", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const startPrefix = timelineDatePrefix(startDate, locale, now);
+  const startTime = timeFormatter.format(startDate);
+
+  if (!endDate) {
+    return `${startPrefix} ${startTime} - ${locale === "zh" ? "进行中" : "Live"}`;
+  }
+
+  const endPrefix = timelineDatePrefix(endDate, locale, now);
+  const endTime = timeFormatter.format(endDate);
+
+  if (startPrefix === endPrefix) {
+    return `${startPrefix} ${startTime} - ${endTime}`;
+  }
+
+  return `${startPrefix} ${startTime} - ${endPrefix} ${endTime}`;
+}

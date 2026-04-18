@@ -251,6 +251,12 @@ app.whenReady().then(async () => {
   app.setLoginItemSettings({ openAtLogin: database.getSettings().launchOnStartup });
   await extensionBridge.start();
   await createWindow();
+  powerMonitor.on("suspend", () => {
+    database.closeOpenActivityEvent();
+  });
+  powerMonitor.on("lock-screen", () => {
+    database.closeOpenActivityEvent();
+  });
   startTrackingLoop();
 });
 

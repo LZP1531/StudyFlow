@@ -20,6 +20,8 @@ import type {
 import type { ActiveWindowSnapshot } from "./tracking";
 
 const sourceColors = ["#f97316", "#14b8a6", "#facc15", "#38bdf8", "#fb7185", "#a78bfa"];
+const maxMergeGapMs = 90_000;
+const maxSummaryEventDurationSeconds = 8 * 60 * 60;
 const neutralTrackingSnapshot: TrackingSnapshot = {
   isTracking: false,
   currentSource: "Idle",
@@ -66,6 +68,13 @@ interface ActivityEventRow {
   is_idle: number;
   confidence: number;
   created_at: string;
+}
+
+interface DailyAggregateBucket {
+  studySeconds: number;
+  distractionSeconds: number;
+  studyEventCount: number;
+  topSourceSeconds: Map<string, number>;
 }
 
 export class StudyflowDatabase {
@@ -138,91 +147,39 @@ export class StudyflowDatabase {
         topSource: "Study",
       };
     }
-
-    const result = this.db
-      .prepare(
-        `select
-           coalesce(sum(case when classification = 'study' then duration_seconds else 0 end), 0) as total_study_seconds,
-           coalesce(sum(case when classification = 'distraction' then duration_seconds else 0 end), 0) as distraction_seconds
-         from activity_events
-         where date(started_at) = ?`,
-      )
-      .get(referenceDate) as { total_study_seconds: number; distraction_seconds: number };
-
-    const focused = this.db
-      .prepare(
-        `select count(*) as count
-         from study_sessions
-         where date(started_at) = ?`,
-      )
-      .get(referenceDate) as { count: number };
-
-    const topSource = this.db
-      .prepare(
-        `select source_label
-         from activity_events
-         where date(started_at) = ? and classification = 'study'
-         group by source_label
-         order by sum(duration_seconds) desc
-         limit 1`,
-      )
-      .get(referenceDate) as { source_label: string } | undefined;
+    const dailyBuckets = this.buildDailyActivityBuckets();
+    const summary = dailyBuckets.get(referenceDate);
+    const focused = this.countStudySessionsByLocalDate().get(referenceDate) ?? 0;
+    const topSource = this.getTopSourceLabel(summary);
 
     return {
       date: referenceDate,
-      totalStudyMinutes: Math.round(result.total_study_seconds / 60),
-      focusedSessions: focused.count,
-      distractionsMinutes: Math.round(result.distraction_seconds / 60),
-      topSource: topSource?.source_label ?? "Study",
+      totalStudyMinutes: Math.round((summary?.studySeconds ?? 0) / 60),
+      focusedSessions: focused,
+      distractionsMinutes: Math.round((summary?.distractionSeconds ?? 0) / 60),
+      topSource,
     };
   }
 
   getWeeklySummary(): DailySummary[] {
-    const rows = this.db
-      .prepare(
-        `select
-           date(started_at) as date,
-           coalesce(sum(case when classification = 'study' then duration_seconds else 0 end), 0) as total_study_seconds,
-           coalesce(sum(case when classification = 'distraction' then duration_seconds else 0 end), 0) as distraction_seconds,
-           count(case when classification = 'study' then 1 end) as study_event_count
-         from activity_events
-         group by date(started_at)
-         order by date(started_at) desc
-         limit 7`,
-      )
-      .all() as Array<{
-      date: string;
-      total_study_seconds: number;
-      distraction_seconds: number;
-      study_event_count: number;
-    }>;
-
-    if (rows.length === 0) {
+    const dailyBuckets = this.buildDailyActivityBuckets();
+    if (dailyBuckets.size === 0) {
       return [];
     }
+    const sessionCounts = this.countStudySessionsByLocalDate();
+    const sortedDates = [...dailyBuckets.keys()].sort((left, right) => right.localeCompare(left)).slice(0, 7).reverse();
 
-    return rows
-      .reverse()
-      .map((row) => {
-        const topSource = this.db
-          .prepare(
-            `select source_label
-             from activity_events
-             where date(started_at) = ? and classification = 'study'
-             group by source_label
-             order by sum(duration_seconds) desc
-             limit 1`,
-          )
-          .get(row.date) as { source_label: string } | undefined;
+    return sortedDates.map((date) => {
+      const summary = dailyBuckets.get(date);
 
-        return {
-          date: row.date,
-          totalStudyMinutes: Math.round(row.total_study_seconds / 60),
-          focusedSessions: row.study_event_count,
-          distractionsMinutes: Math.round(row.distraction_seconds / 60),
-          topSource: topSource?.source_label ?? "Study",
-        };
-      });
+      return {
+        date,
+        totalStudyMinutes: Math.round((summary?.studySeconds ?? 0) / 60),
+        focusedSessions: sessionCounts.get(date) ?? 0,
+        distractionsMinutes: Math.round((summary?.distractionSeconds ?? 0) / 60),
+        topSource: this.getTopSourceLabel(summary),
+      };
+    });
   }
 
   listSourceBreakdown(): SourceBreakdown[] {
@@ -230,26 +187,20 @@ export class StudyflowDatabase {
     if (!referenceDate) {
       return [];
     }
+    const summary = this.buildDailyActivityBuckets().get(referenceDate);
+    const sourceRows = [...(summary?.topSourceSeconds.entries() ?? [])]
+      .map(([sourceLabel, durationSeconds]) => ({ sourceLabel, durationSeconds }))
+      .sort((left, right) => right.durationSeconds - left.durationSeconds);
 
-    const rows = this.db
-      .prepare(
-        `select source_label, sum(duration_seconds) as duration_seconds
-         from activity_events
-         where date(started_at) = ? and classification = 'study'
-         group by source_label
-         order by duration_seconds desc`,
-      )
-      .all(referenceDate) as Array<{ source_label: string; duration_seconds: number }>;
-
-    if (rows.length === 0) {
+    if (sourceRows.length === 0) {
       return [];
     }
 
-    const total = rows.reduce((sum, row) => sum + row.duration_seconds, 0) || 1;
-    return rows.map((row, index) => ({
-      sourceLabel: row.source_label,
-      minutes: Math.round(row.duration_seconds / 60),
-      share: Math.round((row.duration_seconds / total) * 100),
+    const total = sourceRows.reduce((sum, row) => sum + row.durationSeconds, 0) || 1;
+    return sourceRows.map((row, index) => ({
+      sourceLabel: row.sourceLabel,
+      minutes: Math.round(row.durationSeconds / 60),
+      share: Math.round((row.durationSeconds / total) * 100),
       accent: sourceColors[index % sourceColors.length],
     }));
   }
@@ -601,7 +552,7 @@ export class StudyflowDatabase {
     const resolved = this.resolveRule(sample);
 
     if (openEventRow && !this.canMerge(openEventRow, sample, resolved)) {
-      this.closeActivityEvent(openEventRow.id, now);
+      this.closeActivityEvent(openEventRow.id, this.getSafeEndedAt(openEventRow, now));
     }
 
     if (resolved.classification === "ignore") {
@@ -636,6 +587,9 @@ export class StudyflowDatabase {
       .get() as ActivityEventRow | undefined;
 
     if (latestOpen && this.canMerge(latestOpen, sample, resolved)) {
+      if (this.hasExcessiveMergeGap(latestOpen, now)) {
+        this.closeActivityEvent(latestOpen.id, this.getLastObservedAt(latestOpen));
+      } else {
       const durationSeconds = Math.max(
         0,
         Math.round((new Date(now).getTime() - new Date(latestOpen.started_at).getTime()) / 1000),
@@ -664,6 +618,7 @@ export class StudyflowDatabase {
           isIdle: sample.isIdle ? 1 : 0,
         });
       return;
+      }
     }
 
     const event: ActivityEvent = {
@@ -847,14 +802,156 @@ export class StudyflowDatabase {
   }
 
   private getReferenceDate() {
-    const row = this.db
-      .prepare(`select date(max(started_at)) as date from activity_events`)
-      .get() as { date: string | null };
-    return row.date;
+    const dates = [...this.buildDailyActivityBuckets().keys()].sort((left, right) => right.localeCompare(left));
+    return dates[0] ?? null;
   }
 
   private getTodayDateKey() {
-    return new Date().toISOString().slice(0, 10);
+    return this.formatLocalDateKey(new Date());
+  }
+
+  private formatLocalDateKey(date: Date) {
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getDate()}`.padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  private getLocalDayStart(date: Date) {
+    const next = new Date(date);
+    next.setHours(0, 0, 0, 0);
+    return next;
+  }
+
+  private getEventRowsForSummaries() {
+    return this.db
+      .prepare(
+        `select
+           id,
+           started_at,
+           ended_at,
+           duration_seconds,
+           source_type,
+           app_name,
+           window_title,
+           domain,
+           url,
+           browser_name,
+           classification,
+           category,
+           source_label,
+           matched_rule_id,
+           is_idle,
+           confidence,
+           created_at
+         from activity_events`,
+      )
+      .all() as ActivityEventRow[];
+  }
+
+  private getEffectiveEventEnd(row: ActivityEventRow) {
+    if (row.ended_at) {
+      return new Date(row.ended_at);
+    }
+
+    return new Date(new Date(row.started_at).getTime() + Math.max(0, row.duration_seconds) * 1000);
+  }
+
+  private buildDailyActivityBuckets() {
+    const buckets = new Map<string, DailyAggregateBucket>();
+    const rows = this.getEventRowsForSummaries();
+
+    for (const row of rows) {
+      if (!this.shouldIncludeRowInSummaries(row)) {
+        continue;
+      }
+
+      const start = new Date(row.started_at);
+      const end = this.getEffectiveEventEnd(row);
+
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end <= start) {
+        continue;
+      }
+
+      let segmentStart = new Date(start);
+
+      while (segmentStart < end) {
+        const nextDayStart = this.getLocalDayStart(new Date(segmentStart.getTime() + 24 * 60 * 60 * 1000));
+        const segmentEnd = nextDayStart < end ? nextDayStart : end;
+        const segmentSeconds = Math.max(0, Math.round((segmentEnd.getTime() - segmentStart.getTime()) / 1000));
+
+        if (segmentSeconds > 0) {
+          const dateKey = this.formatLocalDateKey(segmentStart);
+          const bucket = buckets.get(dateKey) ?? {
+            studySeconds: 0,
+            distractionSeconds: 0,
+            studyEventCount: 0,
+            topSourceSeconds: new Map<string, number>(),
+          };
+
+          if (row.classification === "study") {
+            bucket.studySeconds += segmentSeconds;
+            bucket.topSourceSeconds.set(
+              row.source_label,
+              (bucket.topSourceSeconds.get(row.source_label) ?? 0) + segmentSeconds,
+            );
+          } else if (row.classification === "distraction") {
+            bucket.distractionSeconds += segmentSeconds;
+          }
+
+          buckets.set(dateKey, bucket);
+        }
+
+        segmentStart = segmentEnd;
+      }
+    }
+
+    return buckets;
+  }
+
+  private countStudySessionsByLocalDate() {
+    const counts = new Map<string, number>();
+    const rows = this.db
+      .prepare(`select started_at, duration_seconds from study_sessions`)
+      .all() as Array<{ started_at: string; duration_seconds: number }>;
+
+    for (const row of rows) {
+      if (row.duration_seconds > maxSummaryEventDurationSeconds) {
+        continue;
+      }
+
+      const startedAt = new Date(row.started_at);
+      if (Number.isNaN(startedAt.getTime())) {
+        continue;
+      }
+
+      const dateKey = this.formatLocalDateKey(startedAt);
+      counts.set(dateKey, (counts.get(dateKey) ?? 0) + 1);
+    }
+
+    return counts;
+  }
+
+  private getTopSourceLabel(summary: DailyAggregateBucket | undefined) {
+    if (!summary || summary.topSourceSeconds.size === 0) {
+      return "Study";
+    }
+
+    let topSource = "Study";
+    let topSeconds = -1;
+
+    for (const [sourceLabel, seconds] of summary.topSourceSeconds.entries()) {
+      if (seconds > topSeconds) {
+        topSource = sourceLabel;
+        topSeconds = seconds;
+      }
+    }
+
+    return topSource;
+  }
+
+  private shouldIncludeRowInSummaries(row: ActivityEventRow) {
+    return row.duration_seconds <= maxSummaryEventDurationSeconds;
   }
 
   private ensureDefaultSettings() {
@@ -1037,6 +1134,20 @@ export class StudyflowDatabase {
           updatedAt: endedAt,
         });
     }
+  }
+
+  private getLastObservedAt(row: ActivityEventRow) {
+    return new Date(new Date(row.started_at).getTime() + Math.max(0, row.duration_seconds) * 1000).toISOString();
+  }
+
+  private hasExcessiveMergeGap(row: ActivityEventRow, nextCapturedAt: string) {
+    const lastObservedAtMs = new Date(this.getLastObservedAt(row)).getTime();
+    const nextCapturedAtMs = new Date(nextCapturedAt).getTime();
+    return nextCapturedAtMs - lastObservedAtMs > maxMergeGapMs;
+  }
+
+  private getSafeEndedAt(row: ActivityEventRow, nextCapturedAt: string) {
+    return this.hasExcessiveMergeGap(row, nextCapturedAt) ? this.getLastObservedAt(row) : nextCapturedAt;
   }
 
   private resolveRule(sample: ActiveWindowSnapshot): ResolvedRule {

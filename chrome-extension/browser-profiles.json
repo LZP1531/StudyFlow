@@ -1,0 +1,26 @@
+[
+  {
+    "id": "chrome",
+    "displayName": "Google Chrome",
+    "extensionName": "StudyFlow Companion (Chrome)",
+    "appAliases": ["Google Chrome", "chrome.exe"]
+  },
+  {
+    "id": "edge",
+    "displayName": "Microsoft Edge",
+    "extensionName": "StudyFlow Companion (Edge)",
+    "appAliases": ["Microsoft Edge", "msedge.exe"]
+  },
+  {
+    "id": "brave",
+    "displayName": "Brave",
+    "extensionName": "StudyFlow Companion (Brave)",
+    "appAliases": ["Brave", "brave.exe"]
+  },
+  {
+    "id": "lenovo",
+    "displayName": "Lenovo Browser",
+    "extensionName": "StudyFlow Companion (Lenovo)",
+    "appAliases": ["Lenovo Browser", "LenovoBrowser.exe", "LenovoBrowser", "SLBrowser.exe"]
+  }
+]

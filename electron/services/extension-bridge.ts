@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 
 export interface BrowserActivityPayload {
   browser: string;
+  browserName: string;
   url: string;
   domain: string;
   title: string;

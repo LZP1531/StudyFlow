@@ -1,5 +1,5 @@
-const BROWSER_ID = "chrome";
-const BROWSER_NAME = "Google Chrome";
+const BROWSER_ID = "__BROWSER_ID__";
+const BROWSER_NAME = "__BROWSER_NAME__";
 
 function inferPageType(url) {
   if (url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("brave://")) {

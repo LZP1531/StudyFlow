@@ -91,6 +91,7 @@ dist
 
 # Electron build output
 dist-electron/
+chrome-extension/dist/
 
 # vuepress build output
 .vuepress/dist
